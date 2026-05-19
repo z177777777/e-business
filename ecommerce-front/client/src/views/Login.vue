@@ -69,6 +69,9 @@ const handleLogin = async () => {
     authStore.setRememberedEmail(form.rememberMe ? form.email : "");
     ElMessage.success("登录成功");
     router.push("/home");
+  } catch (err) {
+    // 错误由拦截器负责展示，此处捕获以避免未捕获的 Promise 错误
+    console.warn("Login failed:", err?.message || err);
   } finally {
     loading.value = false;
   }
