@@ -1,0 +1,1 @@
+import{h as s}from"./http-D3OAGrxe.js";const a=(t,o)=>s.post("/api/auth/send-code",{email:t,purpose:o}),e=t=>s.post("/api/auth/register",t),n=t=>s.post("/api/auth/login",t),p=t=>s.post("/api/auth/reset-password",t),u=()=>s.post("/api/auth/logout");export{p as a,u as b,n as l,e as r,a as s};

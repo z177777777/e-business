@@ -1,0 +1,1 @@
+import{h as e}from"./http-D_7LKo6I.js";const r=()=>e.get("/api/cart/items"),c=t=>e.post("/api/cart/items",t),m=(t,a)=>e.put(`/api/cart/items/${t}`,a),i=t=>e.delete(`/api/cart/items/${t}`),p=()=>e.delete("/api/cart/items");export{c as a,p as c,i as d,r as g,m as u};

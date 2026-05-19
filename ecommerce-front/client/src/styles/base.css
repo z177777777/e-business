@@ -1,0 +1,151 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap");
+
+:root {
+  --brand-primary: #ff6a3d;
+  --brand-secondary: #ff3d55;
+  --brand-accent: #ffb347;
+  --bg: #f6f6f7;
+  --text-primary: #1c1c1e;
+  --text-secondary: #5f5f65;
+  --card: #ffffff;
+  --radius-lg: 22px;
+  --shadow-soft: 0 16px 40px rgba(16, 24, 40, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Poppins", "Noto Sans SC", sans-serif;
+  background: radial-gradient(1200px 600px at 20% -10%, #ffe8d9 0%, transparent 60%),
+    radial-gradient(1000px 600px at 110% 10%, #ffe0e7 0%, transparent 65%),
+    var(--bg);
+  color: var(--text-primary);
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.auth-card {
+  width: min(920px, 100%);
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  overflow: hidden;
+}
+
+.auth-hero {
+  padding: 42px;
+  background: linear-gradient(135deg, #ff7a4f 0%, #ff4d64 45%, #ffb25b 100%);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.auth-hero h1 {
+  margin: 0;
+  font-size: 34px;
+  letter-spacing: 0.5px;
+}
+
+.auth-hero p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.6;
+}
+
+.auth-form {
+  padding: 40px 36px 36px;
+}
+
+.auth-title {
+  margin: 0 0 20px;
+  font-size: 24px;
+}
+
+.auth-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.auth-footer {
+  margin-top: 18px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.auth-footer a {
+  color: var(--brand-primary);
+  font-weight: 600;
+}
+
+.form-grid {
+  display: grid;
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .auth-card {
+    grid-template-columns: 1fr;
+  }
+  .auth-hero {
+    padding: 30px;
+  }
+}
+
+.profile-page {
+  min-height: 100vh;
+  padding: 40px 20px 60px;
+}
+
+.profile-shell {
+  max-width: 980px;
+  margin: 0 auto;
+  display: grid;
+  gap: 22px;
+}
+
+.profile-header {
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  padding: 26px 30px;
+  box-shadow: var(--shadow-soft);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.profile-header h2 {
+  margin: 0;
+}
+
+.profile-card {
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  padding: 26px 30px;
+  box-shadow: var(--shadow-soft);
+}
+
+.section-title {
+  margin: 0 0 12px;
+  font-size: 18px;
+}

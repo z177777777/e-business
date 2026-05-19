@@ -1,0 +1,1 @@
+import{h as r}from"./http-DWbSyczA.js";const o=()=>r.post("/api/orders/checkout"),e=()=>r.get("/api/orders"),p=s=>r.get(`/api/orders/${s}`),a=s=>r.post(`/api/orders/${s}/pay`);export{o as c,p as g,e as l,a as p};
