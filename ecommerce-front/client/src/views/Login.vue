@@ -45,6 +45,8 @@ const authStore = useAuthStore();
 const formRef = ref();
 const loading = ref(false);
 
+const isAdminEmail = (email) => String(email || "").trim().toLowerCase() === "admin@local";
+
 const form = reactive({
   email: authStore.rememberedEmail || "",
   password: "",
@@ -68,7 +70,7 @@ const handleLogin = async () => {
     authStore.setSession(res.data.token, res.data.user, form.rememberMe);
     authStore.setRememberedEmail(form.rememberMe ? form.email : "");
     ElMessage.success("登录成功");
-    router.push("/home");
+    router.push(isAdminEmail(form.email) ? "/admin/dashboard" : "/home");
   } catch (err) {
     // 错误由拦截器负责展示，此处捕获以避免未捕获的 Promise 错误
     console.warn("Login failed:", err?.message || err);

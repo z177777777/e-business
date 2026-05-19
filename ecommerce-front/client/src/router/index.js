@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useAuthStore } from "@/store/auth";
 
+const isAdminUser = (user) => String(user?.email || "").trim().toLowerCase() === "admin@local";
+
 const routes = [
   { path: "/", redirect: "/login" },
   { path: "/home", component: () => import("@/views/Home.vue") },
@@ -55,16 +57,23 @@ const router = createRouter({
 
 router.beforeEach((to) => {
   const auth = useAuthStore();
+  const adminUser = isAdminUser(auth.user);
   if (to.meta.requiresAuth && !auth.token) {
     return "/login";
   }
   if (to.meta.requiresAdmin) {
-    if (!auth.user || auth.user.role !== "ADMIN") {
+    if (!auth.token) {
       return "/admin/login";
     }
+    if (!adminUser) {
+      return "/home";
+    }
+  }
+  if (to.path === "/admin/login" && auth.token) {
+    return adminUser ? "/admin/dashboard" : "/home";
   }
   if ((to.path === "/login" || to.path === "/register" || to.path === "/forgot") && auth.token) {
-    return "/home";
+    return adminUser ? "/admin/dashboard" : "/home";
   }
   return true;
 });
