@@ -20,13 +20,16 @@ public class AdminUserInitializer implements CommandLineRunner {
   public void run(String... args) throws Exception {
     final String adminEmail = "admin@local";
     final String adminPassword = "000000";
-    if (!userRepository.existsByEmail(adminEmail)) {
-      User admin = new User();
-      admin.setEmail(adminEmail);
-      admin.setPasswordHash(passwordEncoder.encode(adminPassword));
-      admin.setNickname("admin");
-      admin.setStatus(1);
-      userRepository.save(admin);
+    boolean existed = userRepository.existsByEmail(adminEmail);
+    User admin = userRepository.findByEmail(adminEmail).orElseGet(User::new);
+    admin.setEmail(adminEmail);
+    admin.setPasswordHash(passwordEncoder.encode(adminPassword));
+    admin.setNickname("admin");
+    admin.setStatus(1);
+    userRepository.save(admin);
+    if (existed) {
+      System.out.println("Reset admin user password: " + adminEmail);
+    } else {
       System.out.println("Created admin user: " + adminEmail);
     }
   }
