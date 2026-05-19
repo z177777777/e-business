@@ -8,7 +8,7 @@
       </div>
       <div class="auth-form">
         <h2 class="auth-title">欢迎回来</h2>
-        <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
+        <el-form ref="formRef" :model="form" :rules="rules" label-position="top" @submit.prevent="handleLogin">
           <div class="form-grid">
             <el-form-item label="邮箱" prop="email">
               <el-input v-model="form.email" placeholder="请输入邮箱" />
@@ -21,7 +21,7 @@
             <el-checkbox v-model="form.rememberMe">记住我</el-checkbox>
             <router-link to="/forgot">忘记密码？</router-link>
           </div>
-          <el-button type="primary" color="#ff6a3d" :loading="loading" @click="handleLogin" style="width: 100%; margin-top: 18px;">
+          <el-button type="primary" native-type="submit" color="#ff6a3d" :loading="loading" style="width: 100%; margin-top: 18px;">
             登录
           </el-button>
         </el-form>
@@ -59,7 +59,10 @@ const rules = {
 };
 
 const handleLogin = async () => {
-  await formRef.value.validate();
+  const valid = await formRef.value?.validate().catch(() => false);
+  if (!valid) {
+    return;
+  }
   loading.value = true;
   try {
     const res = await login({
