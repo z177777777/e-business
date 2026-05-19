@@ -31,6 +31,21 @@ const routes = [
     meta: { requiresAuth: true }
   }
   ,{ path: "/checkout", component: () => import("@/views/Checkout.vue"), meta: { requiresAuth: true } }
+    ,
+    // Admin routes (reuse user login view)
+    { path: "/admin/login", component: () => import("@/views/Login.vue") },
+    {
+      path: "/admin",
+      component: () => import("@/views/admin/AdminLayout.vue"),
+      meta: { requiresAuth: true, requiresAdmin: true },
+      children: [
+        { path: "", redirect: "/admin/dashboard" },
+        { path: "dashboard", component: () => import("@/views/admin/AdminDashboard.vue") },
+        { path: "users", component: () => import("@/views/admin/AdminUsers.vue") },
+        { path: "products", component: () => import("@/views/admin/AdminProducts.vue") },
+        { path: "orders", component: () => import("@/views/admin/AdminOrders.vue") }
+      ]
+    }
 ];
 
 const router = createRouter({
@@ -42,6 +57,11 @@ router.beforeEach((to) => {
   const auth = useAuthStore();
   if (to.meta.requiresAuth && !auth.token) {
     return "/login";
+  }
+  if (to.meta.requiresAdmin) {
+    if (!auth.user || auth.user.role !== "ADMIN") {
+      return "/admin/login";
+    }
   }
   if ((to.path === "/login" || to.path === "/register" || to.path === "/forgot") && auth.token) {
     return "/home";
