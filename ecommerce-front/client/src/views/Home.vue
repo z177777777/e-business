@@ -25,7 +25,17 @@
         </el-input>
         <div class="hot-keys">
           <span class="hot-title">热搜</span>
-          <el-tag v-for="item in hotKeywords" :key="item" size="small" effect="plain" class="hot-tag">
+          <el-tag
+            v-for="item in hotKeywords"
+            :key="item"
+            size="small"
+            effect="plain"
+            class="hot-tag"
+            @click="onHotClick(item)"
+            tabindex="0"
+            @keyup.enter="onHotClick(item)"
+            style="cursor:pointer"
+          >
             {{ item }}
           </el-tag>
         </div>
@@ -35,34 +45,59 @@
           <router-link to="/login" class="text-link">登录</router-link>
           <router-link to="/register" class="text-link">注册</router-link>
         </template>
+        <router-link v-else to="/profile" class="avatar-link" title="我的资料">
+          <img
+            v-if="authStore.user?.avatarUrl"
+            :src="authStore.user.avatarUrl"
+            alt="avatar"
+            class="header-avatar-img"
+          />
+          <span v-else class="header-avatar-placeholder">{{ (authStore.user?.nickname || '用').slice(0, 1) }}</span>
+        </router-link>
       </div>
     </header>
 
     <section class="hero">
       <div class="hero-carousel">
         <el-carousel height="320px" indicator-position="outside">
-          <el-carousel-item v-for="banner in banners" :key="banner.title">
-            <div class="banner" :style="{ background: banner.bg }">
+          <el-carousel-item v-for="slide in heroSlides" :key="slide.title">
+            <div
+              class="banner is-clickable"
+              :style="{ background: slide.bg }"
+              role="button"
+              tabindex="0"
+              @click="goCategory(slide.category)"
+              @keyup.enter="goCategory(slide.category)"
+              @keyup.space.prevent="goCategory(slide.category)"
+            >
               <div class="banner-info">
-                <span class="banner-tag">{{ banner.tag }}</span>
-                <h2>{{ banner.title }}</h2>
-                <p>{{ banner.subtitle }}</p>
-                <el-button type="primary" color="#1c1c1e">马上看看</el-button>
+                <span class="banner-tag">{{ slide.tag }}</span>
+                <h2>{{ slide.title }}</h2>
+                <p>{{ slide.subtitle }}</p>
+                <div v-if="slide.highlight" class="banner-meta">
+                  <span>{{ slide.highlight }}</span>
+                </div>
               </div>
-              <div class="banner-art">
-                <div class="art-ring"></div>
-                <div class="art-card">限时折扣</div>
+              <div class="banner-showcase">
+                <div
+                  v-for="(product, index) in slide.products"
+                  :key="product.id"
+                  class="hero-product-card"
+                  :style="{ ...getCoverStyle(product), animationDelay: `${index * 0.16}s` }"
+                >
+                  <div class="hero-product-glow"></div>
+                  <div class="hero-badge" v-if="product.tag">{{ product.tag }}</div>
+                  <div class="hero-product-media">
+                    <div class="hero-product-image" :style="getHeroImageStyle(product)"></div>
+                    <div class="hero-product-pedestal"></div>
+                  </div>
+                  <div class="hero-product-name">{{ product.name }}</div>
+                  <div class="hero-product-price">￥{{ formatPrice(product.price) }}</div>
+                </div>
               </div>
             </div>
           </el-carousel-item>
         </el-carousel>
-      </div>
-      <div class="hero-side">
-        <div v-for="card in quickCards" :key="card.title" class="side-card" :style="{ background: card.bg }">
-          <div class="side-title">{{ card.title }}</div>
-          <div class="side-desc">{{ card.desc }}</div>
-          <el-button type="primary" color="#ffffff" plain class="side-btn">{{ card.action }}</el-button>
-        </div>
       </div>
     </section>
 
@@ -89,19 +124,19 @@
       </div>
       <div class="product-row">
         <div
-          v-for="item in hotProducts"
+          v-for="item in hotProductsDisplay"
           :key="item.id"
           class="product-card is-clickable"
           @click="goProduct(item)"
         >
-          <div class="product-cover" :style="{ background: item.bg }"></div>
+          <div class="product-cover" :style="getCoverStyle(item)"></div>
           <div class="product-info">
             <div class="product-title">{{ item.name }}</div>
             <div class="product-meta">
               <span>销量 {{ item.sold }}</span>
-              <el-tag size="small" effect="dark" type="danger">{{ item.tag }}</el-tag>
+              <el-tag v-if="item.tag" size="small" effect="dark" type="danger">{{ item.tag }}</el-tag>
             </div>
-            <div class="product-price">￥{{ item.price }}</div>
+            <div class="product-price">￥{{ formatPrice(item.price) }}</div>
           </div>
         </div>
       </div>
@@ -117,18 +152,18 @@
       </div>
       <div class="product-grid">
         <div
-          v-for="item in newProducts"
+          v-for="item in newProductsDisplay"
           :key="item.id"
           class="product-card compact is-clickable"
           @click="goProduct(item)"
         >
-          <div class="product-cover" :style="{ background: item.bg }"></div>
+          <div class="product-cover" :style="getCoverStyle(item)"></div>
           <div class="product-info">
             <div class="product-title">{{ item.name }}</div>
             <div class="product-meta">
               <span>{{ item.subtitle }}</span>
             </div>
-            <div class="product-price">￥{{ item.price }}</div>
+            <div class="product-price">￥{{ formatPrice(item.price) }}</div>
           </div>
         </div>
       </div>
@@ -139,53 +174,52 @@
 </template>
 
 <script setup>
-import { computed, ref } from "vue";
+import { computed, ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/store/auth";
-import { getProductsByIds, hotProductIds, newProductIds } from "@/data/products";
+import { fetchProducts } from "@/data/products";
 
 const search = ref("");
 const router = useRouter();
 const authStore = useAuthStore();
 const isAuthed = computed(() => !!authStore.token);
 
-const banners = [
-  {
-    title: "橙意上新",
-    subtitle: "轻量潮品 3 折起，爆款配色随心搭",
-    tag: "新季限定",
-    bg: "linear-gradient(135deg, #ff6a3d 0%, #ff3d55 45%, #ffb347 100%)"
-  },
-  {
-    title: "城市通勤专场",
-    subtitle: "效率穿搭与随身装备，省心组合推荐",
-    tag: "通勤精选",
-    bg: "linear-gradient(135deg, #2f3640 0%, #4b6584 55%, #f7b731 100%)"
-  },
-  {
-    title: "热卖清单",
-    subtitle: "本周榜单上线，口碑爆品一站直达",
-    tag: "热销榜",
-    bg: "linear-gradient(135deg, #1abc9c 0%, #16a085 45%, #f6e58d 100%)"
-  }
-];
+const heroSlides = ref([]);
 
-const quickCards = [
-  {
-    title: "新人礼包",
-    desc: "注册即领 50 元券包",
-    action: "立即领取",
-    bg: "linear-gradient(140deg, #ffe5d9 0%, #ffd5e5 100%)"
-  },
-  {
-    title: "会员日",
-    desc: "精选大牌满减叠加",
-    action: "进入专场",
-    bg: "linear-gradient(140deg, #e0f7fa 0%, #fce4ec 100%)"
-  }
-];
+const slideMetaMap = {
+  '数码潮玩':  { tag: '数码新品', title: '数码潮玩精选',   subtitle: '耳机、相机、潮玩数码一站配齐。',           bg: 'linear-gradient(135deg, #2d3436, #636e72)' },
+  '美妆护肤':  { tag: '美妆好物', title: '美妆护肤精选',   subtitle: '精华、防晒、洁面，呵护每一寸肌肤。',         bg: 'linear-gradient(135deg, #d4a5a5, #9b7b7b)' },
+  '日用家居':  { tag: '居家焕新', title: '日用家居精选',   subtitle: '收纳、香氛，打造更顺手的日常空间。',         bg: 'linear-gradient(135deg, #a3b1c6, #7b8fa1)' },
+  '服饰鞋包':  { tag: '出行穿搭', title: '服饰鞋包精选',   subtitle: '通勤背包、休闲鞋，轻松应对每一天。',         bg: 'linear-gradient(135deg, #8d7b7b, #6b5b5b)' },
+  '运动户外':  { tag: '户外热卖', title: '运动户外精选',   subtitle: '登山、运动、露营装备一次选齐。',             bg: 'linear-gradient(135deg, #60a3bc, #3c6382)' },
+  '食品饮品':  { tag: '轻食补给', title: '食品饮品精选',   subtitle: '咖啡、燕麦、轻食饮品零负担。',               bg: 'linear-gradient(135deg, #c9a96e, #8b6914)' },
+  '智能家电':  { tag: '智能生活', title: '智能家电精选',   subtitle: '空气炸锅、循环风扇，提升居家效率。',         bg: 'linear-gradient(135deg, #5b7b8a, #3b5b6a)' },
+  '办公文具':  { tag: '效率办公', title: '办公文具精选',   subtitle: '笔记本、鼠标、收纳，高效每一天。',           bg: 'linear-gradient(135deg, #7b8b9a, #5b6b7a)' },
+};
 
-const hotKeywords = ["耳机", "运动鞋", "便携咖啡", "香氛蜡烛", "露营装备", "小家电"];
+const loadHeroSlides = (allProducts) => {
+  const grouped = {};
+  for (const p of allProducts) {
+    const cat = p.category;
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push(p);
+  }
+  const slides = [];
+  for (const [category, products] of Object.entries(grouped)) {
+    const meta = slideMetaMap[category] || { tag: category, title: category, subtitle: '', bg: '#555' };
+    slides.push({
+      category,
+      tag: meta.tag,
+      title: meta.title,
+      subtitle: meta.subtitle,
+      bg: meta.bg,
+      products: products.slice(0, 3),
+    });
+  }
+  heroSlides.value = slides;
+};
+
+const hotKeywords = ["耳机", "运动鞋", "便携饮品", "香氛蜡烛", "露营装备", "日用家居"];
 
 const categories = [
   { name: "数码潮玩", short: "数码", desc: "潮流数码与配件", bg: "#ffe7e0" },
@@ -198,13 +232,72 @@ const categories = [
   { name: "办公文具", short: "办公", desc: "效率装备与文具", bg: "#ffeef2" }
 ];
 
-const hotProducts = getProductsByIds(hotProductIds);
-const newProducts = getProductsByIds(newProductIds);
+const hotProducts = ref([]);
+const newProducts = ref([]);
+const hotProductsDisplay = computed(() => hotProducts.value.slice(0, 4));
+const newProductsDisplay = computed(() => newProducts.value.slice(0, 4));
+
+// 优先通过后端获取热门/新品；热门商品不再回退到本地静态数据
+const loadHomeProducts = async () => {
+  try {
+    const hot = await fetchProducts({ type: "hot", size: 4 });
+    hotProducts.value = Array.isArray(hot) ? hot.slice(0, 4) : [];
+  } catch (e) {
+    hotProducts.value = [];
+  }
+  try {
+    const neu = await fetchProducts({ type: "new", size: 4 });
+    newProducts.value = Array.isArray(neu) ? neu.slice(0, 4) : [];
+  } catch (e) {
+    newProducts.value = [];
+  }
+  // 加载轮播图商品（按品类分组，每页最多3个）
+  try {
+    const all = await fetchProducts({ page: 0, size: 100 });
+    loadHeroSlides(Array.isArray(all) ? all : []);
+  } catch (e) {
+    heroSlides.value = [];
+  }
+};
+
+onMounted(() => {
+  loadHomeProducts();
+});
+
+const getCoverStyle = (product) => {
+  const img = product?.image || product?.coverUrl;
+  if (img) {
+    return { background: `url(${img}) center/cover no-repeat, #fff` };
+  }
+  return { background: "#fff" };
+};
+
+const getHeroImageStyle = (product) => {
+  const img = product?.image || product?.coverUrl;
+  return {
+    backgroundImage: img ? `url(${img})` : "none",
+    backgroundColor: "#fff"
+  };
+};
+
+const formatPrice = (p) => {
+  if (p == null) return "0";
+  const n = Number(p);
+  if (Number.isInteger(n)) return n.toString();
+  return n.toFixed(2);
+};
 
 const handleSearch = () => {
   if (!search.value) {
     return;
   }
+  router.push({ path: "/products", query: { q: search.value } });
+};
+
+const onHotClick = (kw) => {
+  if (!kw) return;
+  search.value = kw;
+  router.push({ path: "/products", query: { q: kw } });
 };
 
 const goProduct = (item) => {
@@ -281,7 +374,8 @@ const goMore = (type) => {
 
 /* 仿京东搜索框 */
 .search-input :deep(.el-input__wrapper) {
-  border-radius: 12px;
+  /* left side rounded; right side will be rounded by the button */
+  border-radius: 12px 0 0 12px;
   box-shadow: var(--shadow-soft);
   height: 44px;
   font-size: 14px;
@@ -291,8 +385,6 @@ const goMore = (type) => {
   background: #fff; /* make wrapper the white search box */
   padding: 0;
 }
-/* 调试用：临时红色边框，用于确认样式是否生效，确认后会移除 */
-.search-input.debug-border :deep(.el-input__wrapper) { border: 2px solid red !important }
 .search-input :deep(.el-input__prefix) {
   color: var(--text-secondary);
   padding-left: 12px;
@@ -303,9 +395,10 @@ const goMore = (type) => {
 .search-input :deep(.el-input__append),
 .search-input :deep(.el-input__append .el-button),
 .search-input :deep(.el-input__suffix .el-button) {
-  border-top-left-radius: 0 !important;
-  border-bottom-left-radius: 0 !important;
-  border-radius: 0 8px 8px 0 !important;
+  /* allow the append button to have rounded left corners so both top corners are rounded visually */
+  border-top-left-radius: 8px !important;
+  border-bottom-left-radius: 8px !important;
+  border-radius: 8px !important;
   background: #e60012 !important;
   color: #fff !important;
   border: none !important;
@@ -328,18 +421,20 @@ const goMore = (type) => {
 .search-input :deep(.el-input__append .el-button) {
   /* remove any inner stroke that creates a visible boundary */
   background-clip: padding-box !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 16px !important;
 }
 .search-input :deep(.el-input__append) { height: 100%; display: flex; align-items: center }
-.jd-search-btn { border-radius: 0 8px 8px 0; padding: 8px 16px }
+.jd-search-btn { border-radius: 8px; height: 100%; padding: 0 16px; display: flex; align-items: center; justify-content: center }
 .search-input :deep(.el-input__append .el-button) svg,
 .search-input :deep(.el-input__suffix .el-button) svg { width:18px; height:18px }
 .search-input :deep(.el-input__inner) { height:44px; padding-left:12px; flex: 1; background: transparent; border: none; box-shadow: none }
 .jd-search-btn { font-weight:600 }
 .search-input :deep(.jd-search-btn) { background: #e60012 !important; color: #fff !important; border-color: #e60012 !important }
 
-/* 相机按钮已移除，相关样式清理保留注释以便恢复 */
-.camera-btn { display: none !important }
-.camera-btn svg { display: none !important }
 
 .hot-keys {
   display: flex;
@@ -364,6 +459,44 @@ const goMore = (type) => {
   align-items: center;
 }
 
+.avatar-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  text-decoration: none;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  border: 2px solid transparent;
+}
+
+.avatar-link:hover {
+  box-shadow: 0 0 0 3px rgba(255, 106, 61, 0.25);
+  transform: scale(1.05);
+  border-color: #ff6a3d;
+}
+
+.header-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.header-avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #ff6a3d, #ff3d55);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 15px;
+}
+
 .text-link {
   color: var(--text-secondary);
   font-weight: 500;
@@ -380,7 +513,7 @@ const goMore = (type) => {
 
 .hero {
   display: grid;
-  grid-template-columns: 2.4fr 1fr;
+  grid-template-columns: 1fr;
   gap: 20px;
   align-items: stretch;
 }
@@ -388,14 +521,23 @@ const goMore = (type) => {
 .banner {
   height: 320px;
   border-radius: 26px;
-  padding: 26px 30px;
+  padding: 28px 30px;
   color: #fff;
   display: grid;
-  grid-template-columns: 1.3fr 1fr;
+  grid-template-columns: 1.15fr 1fr;
   align-items: center;
   gap: 24px;
   position: relative;
   overflow: hidden;
+}
+
+.banner.is-clickable {
+  cursor: pointer;
+}
+
+.banner.is-clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 22px 44px rgba(15, 23, 42, 0.18);
 }
 
 .banner-info h2 {
@@ -408,6 +550,15 @@ const goMore = (type) => {
   color: rgba(255, 255, 255, 0.9);
 }
 
+.banner-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 13px;
+}
+
 .banner-tag {
   display: inline-block;
   padding: 4px 12px;
@@ -416,52 +567,124 @@ const goMore = (type) => {
   font-size: 12px;
 }
 
-.banner-art {
+.banner-showcase {
   position: relative;
+  height: 100%;
   display: grid;
-  place-items: center;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+  gap: 14px;
+  padding-left: 12px;
 }
 
-.art-ring {
-  width: 180px;
-  height: 180px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-}
-
-.art-card {
-  position: absolute;
-  background: rgba(255, 255, 255, 0.2);
-  padding: 10px 16px;
-  border-radius: 14px;
-  backdrop-filter: blur(10px);
-}
-
-.hero-side {
-  display: grid;
-  gap: 16px;
-}
-
-.side-card {
-  padding: 22px;
+.hero-product-card {
+  min-height: 168px;
   border-radius: 22px;
+  padding: 18px 16px;
+  position: relative;
+  overflow: hidden;
+  color: #fff;
+  box-shadow: 0 18px 30px rgba(0, 0, 0, 0.16);
+  backdrop-filter: blur(8px);
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  color: #1c1c1e;
+  justify-content: flex-end;
+  gap: 6px;
+  animation: heroFloat 2.8s ease-in-out infinite;
+  cursor: default;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  transform: perspective(900px) rotateX(8deg) rotateY(-10deg);
 }
 
-.side-title {
+.hero-product-card:nth-child(2) {
+  margin-top: 18px;
+  animation-duration: 3.1s;
+}
+
+.hero-product-card:nth-child(3) {
+  margin-top: -8px;
+  animation-duration: 2.9s;
+}
+
+.hero-product-card:hover {
+  transform: perspective(900px) rotateX(4deg) rotateY(-6deg) translateY(-6px) scale(1.02);
+  box-shadow: 0 24px 36px rgba(0, 0, 0, 0.22);
+}
+
+.hero-product-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 25% 20%, rgba(255, 255, 255, 0.35), transparent 46%);
+  pointer-events: none;
+}
+
+.hero-product-media {
+  min-height: 104px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 4px;
+  perspective: 1000px;
+}
+
+.hero-product-image {
+  position: relative;
+  width: 120%;
+  height: 140px;
+  border-radius: 18px;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  filter: drop-shadow(0 20px 30px rgba(12, 18, 28, 0.32));
+  transform: rotateY(-18deg) rotateX(8deg) translateY(6px) translateX(6px);
+  box-shadow: 0 24px 40px rgba(12, 18, 28, 0.28), inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+.hero-product-image::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), transparent 40%);
+  pointer-events: none;
+}
+
+.hero-badge {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  background: #ff4d6d;
+  color: #fff;
+  padding: 6px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 6px;
+  transform: rotate(-6deg);
+  box-shadow: 0 6px 14px rgba(255, 77, 109, 0.18);
+  z-index: 6;
+}
+
+.hero-product-pedestal {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%) translateY(12px) rotateX(80deg) scaleX(1.05);
+  bottom: 12px;
+  width: 72%;
+  height: 18px;
+  background: radial-gradient(ellipse at center, rgba(0,0,0,0.28), rgba(0,0,0,0.08));
+  filter: blur(6px);
+  border-radius: 50%;
+  z-index: 1;
+}
+
+.hero-product-name {
   font-size: 18px;
   font-weight: 700;
+  line-height: 1.2;
 }
 
-.side-desc {
-  color: var(--text-secondary);
-}
-
-.side-btn {
-  align-self: flex-start;
+.hero-product-price {
+  font-size: 13px;
+  opacity: 0.95;
 }
 
 .category-grid {
@@ -539,12 +762,14 @@ const goMore = (type) => {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 18px;
+  overflow-x: auto;
 }
 
 .product-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 18px;
+  overflow-x: auto;
 }
 
 .product-card {
@@ -625,6 +850,16 @@ const goMore = (type) => {
   }
 }
 
+@keyframes heroFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
 @media (max-width: 1200px) {
   .home-header {
     grid-template-columns: 1fr;
@@ -632,10 +867,22 @@ const goMore = (type) => {
   .hero {
     grid-template-columns: 1fr;
   }
-  .category-grid,
+  .category-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .product-row,
   .product-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(220px, 1fr));
+  }
+
+  .banner {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .banner-showcase {
+    padding-left: 0;
   }
 }
 
@@ -643,13 +890,23 @@ const goMore = (type) => {
   .home-page {
     padding: 20px 16px 60px;
   }
-  .category-grid,
+  .category-grid {
+    grid-template-columns: 1fr;
+  }
+
   .product-row,
   .product-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(4, minmax(220px, 1fr));
   }
   .banner {
     grid-template-columns: 1fr;
+  }
+  .banner-showcase {
+    grid-template-columns: 1fr;
+  }
+  .hero-product-card:nth-child(2),
+  .hero-product-card:nth-child(3) {
+    margin-top: 0;
   }
   .header-actions {
     justify-content: flex-start;

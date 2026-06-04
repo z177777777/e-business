@@ -54,6 +54,7 @@ public class FileService {
 
   private boolean isAllowedImage(String ext) {
     return "jpg".equals(ext) || "jpeg".equals(ext) || "png".equals(ext)
-        || "gif".equals(ext) || "webp".equals(ext);
+        || "gif".equals(ext) || "webp".equals(ext)
+        || "mp4".equals(ext) || "webm".equals(ext) || "mov".equals(ext);
   }
 }

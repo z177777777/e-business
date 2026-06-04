@@ -33,6 +33,12 @@ public class Product {
   @Column(name = "sold_count")
   private Integer sold;
 
+  @Column(name = "stock", columnDefinition = "INT DEFAULT 10")
+  private Integer stock = 10;
+
+  @Column(name = "restock_requests", columnDefinition = "INT DEFAULT 0")
+  private Integer restockRequests = 0;
+
   @Column(name = "cover_url", length = 512)
   private String coverUrl;
 
@@ -47,6 +53,15 @@ public class Product {
 
   @Column(name = "is_new")
   private Boolean isNew;
+
+  @Column(name = "is_published")
+  private Boolean isPublished;
+
+  @Column(name = "is_demo")
+  private Boolean isDemo;
+
+  @Column(name = "review_last_viewed_at")
+  private LocalDateTime reviewLastViewedAt;
 
   @CreationTimestamp
   @Column(name = "created_at", updatable = false)
@@ -136,12 +151,52 @@ public class Product {
     this.isNew = isNew;
   }
 
+  public Boolean getIsPublished() {
+    return isPublished;
+  }
+
+  public void setIsPublished(Boolean isPublished) {
+    this.isPublished = isPublished;
+  }
+
+  public Boolean getIsDemo() {
+    return isDemo;
+  }
+
+  public void setIsDemo(Boolean isDemo) {
+    this.isDemo = isDemo;
+  }
+
   public String getSlug() {
     return slug;
   }
 
   public void setSlug(String slug) {
     this.slug = slug;
+  }
+
+  public Integer getStock() {
+    return stock;
+  }
+
+  public void setStock(Integer stock) {
+    this.stock = stock;
+  }
+
+  public Integer getRestockRequests() {
+    return restockRequests;
+  }
+
+  public void setRestockRequests(Integer restockRequests) {
+    this.restockRequests = restockRequests;
+  }
+
+  public LocalDateTime getReviewLastViewedAt() {
+    return reviewLastViewedAt;
+  }
+
+  public void setReviewLastViewedAt(LocalDateTime reviewLastViewedAt) {
+    this.reviewLastViewedAt = reviewLastViewedAt;
   }
 
   public LocalDateTime getCreatedAt() {

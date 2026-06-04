@@ -5,12 +5,14 @@ public class UserProfileResponse {
   private String email;
   private String nickname;
   private String avatarUrl;
+  private String role;
 
-  public UserProfileResponse(Long id, String email, String nickname, String avatarUrl) {
+  public UserProfileResponse(Long id, String email, String nickname, String avatarUrl, String role) {
     this.id = id;
     this.email = email;
     this.nickname = nickname;
     this.avatarUrl = avatarUrl;
+    this.role = role;
   }
 
   public Long getId() {
@@ -27,5 +29,9 @@ public class UserProfileResponse {
 
   public String getAvatarUrl() {
     return avatarUrl;
+  }
+
+  public String getRole() {
+    return role;
   }
 }

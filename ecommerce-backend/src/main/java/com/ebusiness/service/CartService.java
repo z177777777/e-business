@@ -35,6 +35,9 @@ public class CartService {
   public CartListResponse addItem(AddCartItemRequest request) {
     Long userId = CurrentUserUtil.getCurrentUserId();
     Product product = getProductByIdentifier(request.getProductIdentifier());
+    if (product.getStock() != null && product.getStock() <= 0) {
+      throw new BusinessException(ErrorCode.INVALID_PARAM, "product is out of stock");
+    }
     int quantity = request.getQuantity() == null ? 1 : Math.max(1, request.getQuantity());
     CartItem cartItem = cartItemRepository.findByUserIdAndProductId(userId, product.getId()).orElseGet(CartItem::new);
     cartItem.setUserId(userId);

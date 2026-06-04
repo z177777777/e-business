@@ -11,16 +11,26 @@ public class OrderResponse {
   private String status;
   private LocalDateTime createdAt;
   private LocalDateTime paidAt;
+  private LocalDateTime shippedAt;
+  private LocalDateTime receivedAt;
+  private LocalDateTime updatedAt;
+  private Long userId;
+  private String userName;
   private List<OrderItemResponse> items;
 
   public OrderResponse(Long id, String orderNo, BigDecimal totalAmount, String status, LocalDateTime createdAt,
-      LocalDateTime paidAt, List<OrderItemResponse> items) {
+      LocalDateTime paidAt, LocalDateTime shippedAt, LocalDateTime receivedAt, LocalDateTime updatedAt, Long userId, String userName, List<OrderItemResponse> items) {
     this.id = id;
     this.orderNo = orderNo;
     this.totalAmount = totalAmount;
     this.status = status;
     this.createdAt = createdAt;
     this.paidAt = paidAt;
+    this.shippedAt = shippedAt;
+    this.receivedAt = receivedAt;
+    this.updatedAt = updatedAt;
+    this.userId = userId;
+    this.userName = userName;
     this.items = items;
   }
 
@@ -46,6 +56,26 @@ public class OrderResponse {
 
   public LocalDateTime getPaidAt() {
     return paidAt;
+  }
+
+  public LocalDateTime getShippedAt() {
+    return shippedAt;
+  }
+
+  public LocalDateTime getReceivedAt() {
+    return receivedAt;
+  }
+
+  public LocalDateTime getUpdatedAt() {
+    return updatedAt;
+  }
+
+  public Long getUserId() {
+    return userId;
+  }
+
+  public String getUserName() {
+    return userName;
   }
 
   public List<OrderItemResponse> getItems() {

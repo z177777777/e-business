@@ -19,6 +19,8 @@ public class AuthRegisterRequest {
   @Size(max = 64, message = "Nickname too long")
   private String nickname;
 
+  private Boolean applyCsr;
+
   public String getEmail() {
     return email;
   }
@@ -49,5 +51,13 @@ public class AuthRegisterRequest {
 
   public void setNickname(String nickname) {
     this.nickname = nickname;
+  }
+
+  public Boolean getApplyCsr() {
+    return applyCsr;
+  }
+
+  public void setApplyCsr(Boolean applyCsr) {
+    this.applyCsr = applyCsr;
   }
 }

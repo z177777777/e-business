@@ -7,12 +7,15 @@ import com.ebusiness.repository.EmailVerificationCodeRepository;
 import java.time.LocalDateTime;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
 public class VerificationCodeService {
+  private static final Logger logger = LoggerFactory.getLogger(VerificationCodeService.class);
   private final StringRedisTemplate redisTemplate;
   private final MailService mailService;
   private final EmailVerificationCodeRepository codeRepository;
@@ -43,7 +46,12 @@ public class VerificationCodeService {
     String codeKey = "code:" + purpose + ":" + email;
     redisTemplate.opsForValue().set(codeKey, code, codeExpireMinutes, TimeUnit.MINUTES);
 
-    mailService.sendVerificationCode(email, code, purpose);
+    try {
+      mailService.sendVerificationCode(email, code, purpose);
+    } catch (Exception ex) {
+      logger.warn("Failed to send verification code email to {} for purpose {}: {}", email, purpose, ex.getMessage());
+      logger.warn("Verification code generated for {} / {} is {}", email, purpose, code);
+    }
 
     EmailVerificationCode record = new EmailVerificationCode();
     record.setEmail(email);

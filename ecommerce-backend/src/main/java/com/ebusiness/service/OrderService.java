@@ -11,6 +11,8 @@ import com.ebusiness.entity.OrderItem;
 import com.ebusiness.repository.CartItemRepository;
 import com.ebusiness.repository.OrderItemRepository;
 import com.ebusiness.repository.OrderRepository;
+import com.ebusiness.repository.ProductRepository;
+import com.ebusiness.repository.UserRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -24,12 +26,17 @@ public class OrderService {
   private final OrderRepository orderRepository;
   private final OrderItemRepository orderItemRepository;
   private final CartItemRepository cartItemRepository;
+  private final ProductRepository productRepository;
+  private final UserRepository userRepository;
 
   public OrderService(OrderRepository orderRepository, OrderItemRepository orderItemRepository,
-      CartItemRepository cartItemRepository) {
+      CartItemRepository cartItemRepository, ProductRepository productRepository,
+      UserRepository userRepository) {
     this.orderRepository = orderRepository;
     this.orderItemRepository = orderItemRepository;
     this.cartItemRepository = cartItemRepository;
+    this.productRepository = productRepository;
+    this.userRepository = userRepository;
   }
 
   @Transactional
@@ -78,6 +85,10 @@ public class OrderService {
 
   public List<OrderResponse> listMyOrders() {
     Long userId = CurrentUserUtil.getCurrentUserId();
+    return listOrdersByUserId(userId);
+  }
+
+  public List<OrderResponse> listOrdersByUserId(Long userId) {
     List<OrderResponse> responses = new ArrayList<>();
     for (OrderEntity order : orderRepository.findByUserIdOrderByCreatedAtDesc(userId)) {
       responses.add(toResponse(order, null));
@@ -97,12 +108,54 @@ public class OrderService {
     Long userId = CurrentUserUtil.getCurrentUserId();
     OrderEntity order = orderRepository.findByIdAndUserId(id, userId)
         .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "order not found"));
+    boolean justPaid = false;
     if (OrderEntity.STATUS_PENDING.equals(order.getStatus())) {
       order.setStatus(OrderEntity.STATUS_PAID);
       order.setPaidAt(LocalDateTime.now());
       orderRepository.save(order);
+      justPaid = true;
+    }
+    if (justPaid) {
+      incrementSoldCount(order);
     }
     return toResponse(order, null);
+  }
+
+  private void incrementSoldCount(OrderEntity order) {
+    List<OrderItem> items = orderItemRepository.findByOrderIdOrderByIdAsc(order.getId());
+    for (OrderItem item : items) {
+      if (item.getProductId() != null) {
+        productRepository.findById(item.getProductId()).ifPresent(p -> {
+          p.setSold(p.getSold() != null ? p.getSold() + item.getQuantity() : item.getQuantity());
+          if (p.getStock() != null && p.getStock() >= item.getQuantity()) {
+            p.setStock(p.getStock() - item.getQuantity());
+          }
+          productRepository.save(p);
+        });
+      }
+    }
+  }
+
+  public java.util.List<OrderResponse> listAllOrders() {
+    java.util.List<OrderResponse> responses = new java.util.ArrayList<>();
+    for (OrderEntity order : orderRepository.findAll()) {
+      responses.add(toResponse(order, null));
+    }
+    return responses;
+  }
+
+  public OrderResponse getOrderByAdmin(Long id) {
+    OrderEntity order = orderRepository.findById(id)
+        .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "order not found"));
+    return toResponse(order, null);
+  }
+
+  @Transactional
+  public void deleteOrderByAdmin(Long id) {
+    OrderEntity order = orderRepository.findById(id)
+        .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "order not found"));
+    orderItemRepository.deleteByOrderId(order.getId());
+    orderRepository.delete(order);
   }
 
   private List<CartItem> getSelectedCartItems(Long userId) {
@@ -148,13 +201,89 @@ public class OrderService {
         items.add(toResponse(orderItem));
       }
     }
+    String userName = userRepository.findById(order.getUserId())
+        .map(u -> (u.getNickname() != null && !u.getNickname().trim().isEmpty()) ? u.getNickname() : u.getEmail())
+        .orElse(null);
     return new OrderResponse(
-        order.getId(),
-        order.getOrderNo(),
-        order.getTotalAmount(),
-        order.getStatus(),
-        order.getCreatedAt(),
-        order.getPaidAt(),
-        items);
+      order.getId(),
+      order.getOrderNo(),
+      order.getTotalAmount(),
+      order.getStatus(),
+      order.getCreatedAt(),
+      order.getPaidAt(),
+      order.getShippedAt(),
+      order.getReceivedAt(),
+      order.getUpdatedAt(),
+      order.getUserId(),
+      userName,
+      items);
+  }
+
+  @Transactional
+  public OrderResponse receiveOrder(Long id) {
+    Long userId = CurrentUserUtil.getCurrentUserId();
+    OrderEntity order = orderRepository.findByIdAndUserId(id, userId)
+        .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "order not found"));
+    if (!OrderEntity.STATUS_SHIPPED.equals(order.getStatus())) {
+      throw new BusinessException(ErrorCode.BIZ_ERROR, "订单未发货，无法确认收货");
+    }
+    order.setStatus(OrderEntity.STATUS_RECEIVED);
+    order.setReceivedAt(LocalDateTime.now());
+    orderRepository.save(order);
+    return toResponse(order, null);
+  }
+
+  @Transactional
+  public void cancelOrder(Long id) {
+    Long userId = CurrentUserUtil.getCurrentUserId();
+    OrderEntity order = orderRepository.findByIdAndUserId(id, userId)
+        .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "order not found"));
+    if (!OrderEntity.STATUS_PENDING.equals(order.getStatus())) {
+      throw new BusinessException(ErrorCode.BIZ_ERROR, "订单已支付或已发货，无法取消");
+    }
+    order.setStatus(OrderEntity.STATUS_CANCELLED);
+    orderRepository.save(order);
+  }
+
+  @Transactional
+  public void requestRefund(Long id) {
+    Long userId = CurrentUserUtil.getCurrentUserId();
+    OrderEntity order = orderRepository.findByIdAndUserId(id, userId)
+        .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "order not found"));
+    if (!OrderEntity.STATUS_PAID.equals(order.getStatus())) {
+      throw new BusinessException(ErrorCode.BIZ_ERROR, "订单未支付或已发货，无法申请退款");
+    }
+    order.setStatus(OrderEntity.STATUS_REFUND_REQUESTED);
+    orderRepository.save(order);
+  }
+
+  @Transactional
+  public void approveRefund(Long id) {
+    OrderEntity order = orderRepository.findById(id)
+        .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "order not found"));
+    if (!OrderEntity.STATUS_REFUND_REQUESTED.equals(order.getStatus())) {
+      throw new BusinessException(ErrorCode.BIZ_ERROR, "订单未申请退款，无法确认退款");
+    }
+    // 恢复库存和销量
+    restoreStock(order);
+    order.setStatus(OrderEntity.STATUS_REFUNDED);
+    orderRepository.save(order);
+  }
+
+  private void restoreStock(OrderEntity order) {
+    List<OrderItem> items = orderItemRepository.findByOrderIdOrderByIdAsc(order.getId());
+    for (OrderItem item : items) {
+      if (item.getProductId() != null) {
+        productRepository.findById(item.getProductId()).ifPresent(p -> {
+          if (p.getSold() != null && p.getSold() >= item.getQuantity()) {
+            p.setSold(p.getSold() - item.getQuantity());
+          }
+          if (p.getStock() != null) {
+            p.setStock(p.getStock() + item.getQuantity());
+          }
+          productRepository.save(p);
+        });
+      }
+    }
   }
 }

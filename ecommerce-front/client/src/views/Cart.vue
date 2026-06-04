@@ -2,7 +2,7 @@
   <div class="cart-page">
     <header class="cart-header">
       <div>
-        <div class="page-kicker">Shopping Cart</div>
+        <div class="page-kicker">购物车</div>
         <h1>购物车</h1>
         <p class="page-subtitle">勾选商品后可直接模拟结算和支付。</p>
       </div>
@@ -115,7 +115,7 @@ const allSelected = computed(() => cartItems.value.length > 0 && cartItems.value
 const formatMoney = (value) => Number(value || 0).toFixed(2);
 
 const coverStyle = (item) => ({
-  background: item.productCoverUrl ? `center / cover no-repeat url(${item.productCoverUrl})` : "linear-gradient(135deg, #ffecd2, #fcb69f)"
+  background: item.productCoverUrl ? `center / cover no-repeat url(${item.productCoverUrl})` : "#fff"
 });
 
 const syncCart = async () => {
@@ -163,14 +163,36 @@ const toggleAll = async (checked) => {
 };
 
 const removeItem = async (item) => {
-  await ElMessageBox.confirm(`确认删除 ${item.productName} 吗？`, "删除商品", { type: "warning" });
+  try {
+    await ElMessageBox.confirm(`商品「${item.productName}」将从购物车中移除，删除后可在商品页重新添加。`, "确认删除商品", {
+      confirmButtonText: "确认删除",
+      cancelButtonText: "暂不删除",
+      type: "warning",
+      customClass: "pretty-confirm-box pretty-confirm-box--danger",
+      distinguishCancelAndClose: true,
+      center: true
+    });
+  } catch (e) {
+    return;
+  }
   await deleteCartItem(item.id);
   ElMessage.success("已删除");
   await reloadCart();
 };
 
 const clearSelected = async () => {
-  await ElMessageBox.confirm("确认删除已勾选商品吗？", "删除已选", { type: "warning" });
+  try {
+    await ElMessageBox.confirm("已勾选商品将从购物车中移除，删除后可在商品页重新添加。", "确认删除已选商品", {
+      confirmButtonText: "确认删除",
+      cancelButtonText: "暂不删除",
+      type: "warning",
+      customClass: "pretty-confirm-box pretty-confirm-box--danger",
+      distinguishCancelAndClose: true,
+      center: true
+    });
+  } catch (e) {
+    return;
+  }
   await clearSelectedCartItems();
   ElMessage.success("已删除已选商品");
   await reloadCart();

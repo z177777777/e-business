@@ -1,27 +1,38 @@
 <template>
   <div class="category-page">
-    <!-- 顶部导航已移除：不显示返回与首页按钮 -->
-
     <section class="category-hero">
       <div>
         <h2>{{ categoryName }}精选</h2>
         <p>挑选该分类下的口碑商品，持续更新中</p>
       </div>
-      <div class="hero-tags">
-        <el-tag v-for="tag in quickTags" :key="tag" effect="plain" class="hero-tag">
-          {{ tag }}
-        </el-tag>
-      </div>
     </section>
+
+    <div class="sort-bar">
+      <span :class="['sort-item', { active: sortBy === '' }]" @click="sortBy = ''">综合</span>
+      <span :class="['sort-item sort-price', { active: sortBy.startsWith('sold') }]" @click="toggleSoldSort">
+        销量
+        <span class="price-arrows">
+          <i :class="['arrow up', { on: sortBy === 'sold-asc' }]">▲</i>
+          <i :class="['arrow down', { on: sortBy === 'sold-desc' }]">▼</i>
+        </span>
+      </span>
+      <span :class="['sort-item sort-price', { active: sortBy.startsWith('price') }]" @click="togglePriceSort">
+        价格
+        <span class="price-arrows">
+          <i :class="['arrow up', { on: sortBy === 'price-asc' }]">▲</i>
+          <i :class="['arrow down', { on: sortBy === 'price-desc' }]">▼</i>
+        </span>
+      </span>
+    </div>
 
     <section v-if="products.length" class="product-grid">
       <div
-        v-for="item in products"
+        v-for="item in displayItems"
         :key="item.id"
         class="product-card is-clickable"
         @click="goProduct(item)"
       >
-        <div class="product-cover" :style="{ background: item.bg }"></div>
+        <div class="product-cover" :style="getCoverStyle(item)"></div>
         <div class="product-info">
           <div class="product-title">{{ item.name }}</div>
           <div class="product-meta">
@@ -44,13 +55,11 @@
 <script setup>
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { useAuthStore } from "@/store/auth";
-import { productList } from "@/data/products";
+import { fetchProducts } from "@/data/products";
+import { ref, onMounted } from "vue";
 
 const route = useRoute();
 const router = useRouter();
-const authStore = useAuthStore();
-const isAuthed = computed(() => !!authStore.token);
 
 const safeDecode = (value) => {
   try {
@@ -62,14 +71,45 @@ const safeDecode = (value) => {
 
 const categoryName = computed(() => safeDecode(route.params.name));
 
-const quickTags = ["新品", "口碑", "热卖", "好评"];
+const products = ref([]);
+const sortBy = ref("");
 
-const products = computed(() => {
-  if (!categoryName.value) {
-    return [];
-  }
-  return productList.filter((item) => item.category === categoryName.value);
+const displayItems = computed(() => {
+  const list = [...products.value];
+  if (!sortBy.value) return products.value;
+  if (sortBy.value === "price-asc") return list.sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0));
+  if (sortBy.value === "price-desc") return list.sort((a, b) => (Number(b.price) || 0) - (Number(a.price) || 0));
+  if (sortBy.value === "sold-desc") return list.sort((a, b) => (Number(b.sold) || 0) - (Number(a.sold) || 0));
+  if (sortBy.value === "sold-asc") return list.sort((a, b) => (Number(a.sold) || 0) - (Number(b.sold) || 0));
+  return products.value;
 });
+
+const getCoverStyle = (item) => {
+  const img = item?.image || item?.coverUrl;
+  if (img) {
+    return { background: `url(${img}) center/cover no-repeat, #fff` };
+  }
+  return { background: "#fff" };
+};
+
+const togglePriceSort = () => {
+  sortBy.value = sortBy.value === "price-asc" ? "price-desc" : "price-asc";
+};
+
+const toggleSoldSort = () => {
+  sortBy.value = sortBy.value === "sold-desc" ? "sold-asc" : "sold-desc";
+};
+
+const loadCategory = async () => {
+  if (!categoryName.value) {
+    products.value = [];
+    return;
+  }
+  const all = await fetchProducts({ page: 0, size: 200 }).catch(() => []);
+  products.value = Array.isArray(all) ? all.filter((item) => item.category === categoryName.value) : [];
+};
+
+onMounted(loadCategory);
 
 const goProduct = (item) => {
   router.push(`/product/${item.id}`);
@@ -109,8 +149,6 @@ const goProduct = (item) => {
   color: var(--text-secondary);
 }
 
-/* 已删除 .back-btn 与 .header-actions 定义（顶部已移除） */
-
 .text-link {
   color: var(--text-secondary);
   font-weight: 500;
@@ -144,15 +182,15 @@ const goProduct = (item) => {
   color: var(--text-secondary);
 }
 
-.hero-tags {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.hero-tag {
-  border-radius: 999px;
-}
+.sort-bar { display:flex; align-items:center; gap:4px; background:#f5f5f5; border-radius:8px; padding:3px; width:fit-content; }
+.sort-item { padding:6px 14px; font-size:13px; color:#666; cursor:pointer; border-radius:6px; transition:all .15s; user-select:none; display:flex; align-items:center; gap:4px; }
+.sort-item:hover { color:#333; }
+.sort-item.active { background:#fff; color:#e4393c; font-weight:600; box-shadow:0 1px 4px rgba(0,0,0,0.08); }
+.sort-price .price-arrows { display:inline-flex; flex-direction:column; line-height:1; font-size:8px; margin-left:2px; }
+.sort-price .arrow { font-style:normal; color:#ccc; }
+.sort-price .arrow.on { color:#e4393c; }
+.sort-price.active .arrow { color:#999; }
+.sort-price.active .arrow.on { color:#e4393c; }
 
 .product-grid {
   display: grid;

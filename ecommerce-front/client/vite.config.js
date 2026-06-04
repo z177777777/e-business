@@ -4,12 +4,30 @@ import path from "path";
 
 export default defineConfig({
   plugins: [vue()],
+  define: {
+    global: "globalThis"
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "src")
     }
   },
   server: {
-    port: 5173
+    port: 5173,
+    proxy: {
+      "/uploads": {
+        target: "http://localhost:8080",
+        changeOrigin: true
+      },
+      "/api": {
+        target: "http://localhost:8080",
+        changeOrigin: true
+      },
+      "/ws": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        ws: true
+      }
+    }
   }
 });

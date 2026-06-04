@@ -1,5 +1,6 @@
 package com.ebusiness.entity;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -26,8 +27,14 @@ public class User {
   @Column(nullable = false, length = 64)
   private String nickname;
 
+  @Column(nullable = false, length = 32)
+  private String role;
+
   @Column(name = "avatar_url", length = 255)
   private String avatarUrl;
+
+  @Column(name = "wallet_balance", precision = 12, scale = 2)
+  private BigDecimal walletBalance = BigDecimal.ZERO;
 
   @Column(nullable = false)
   private Integer status;
@@ -75,6 +82,14 @@ public class User {
     this.nickname = nickname;
   }
 
+  public String getRole() {
+    return role;
+  }
+
+  public void setRole(String role) {
+    this.role = role;
+  }
+
   public String getAvatarUrl() {
     return avatarUrl;
   }
@@ -97,6 +112,14 @@ public class User {
 
   public void setLastLoginAt(LocalDateTime lastLoginAt) {
     this.lastLoginAt = lastLoginAt;
+  }
+
+  public BigDecimal getWalletBalance() {
+    return walletBalance;
+  }
+
+  public void setWalletBalance(BigDecimal walletBalance) {
+    this.walletBalance = walletBalance;
   }
 
   public LocalDateTime getCreatedAt() {

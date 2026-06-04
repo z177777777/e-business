@@ -16,6 +16,14 @@ export const resetPassword = (payload) => {
   return http.post("/api/auth/reset-password", payload);
 };
 
+export const requestPasswordResetSupport = (payload) => {
+  return http.post("/api/auth/password-reset-request", payload);
+};
+
+export const applyCsr = (email) => {
+  return http.post("/api/auth/apply-csr", { email });
+};
+
 export const logout = () => {
   return http.post("/api/auth/logout");
 };

@@ -18,4 +18,16 @@ public final class CurrentUserUtil {
     }
     return ((UserPrincipal) principal).getId();
   }
+
+  public static String getCurrentUserRole() {
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    if (authentication == null) {
+      throw new BusinessException(ErrorCode.UNAUTHORIZED);
+    }
+    Object principal = authentication.getPrincipal();
+    if (!(principal instanceof UserPrincipal)) {
+      throw new BusinessException(ErrorCode.UNAUTHORIZED);
+    }
+    return ((UserPrincipal) principal).getRole();
+  }
 }

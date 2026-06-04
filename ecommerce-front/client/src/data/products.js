@@ -247,11 +247,91 @@ const hotProductIds = [
 ];
 
 const newProductIds = [
-  "light-windbreaker",
-  "smart-lamp",
-  "candle-set",
-  "running-shoes"
+  "commute-backpack",
+  "mini-coffee-machine",
+  "eye-lamp",
+  "smart-thermos"
 ];
+
+const productImageKeywords = {
+  "earbuds-lite": "wireless earbuds product photography",
+  "smart-watch": "smart watch product photo studio",
+  "portable-projector": "portable projector product photo",
+  "foundation-liquid": "foundation makeup product photo",
+  "amino-cleanser": "facial cleanser product photography",
+  "repair-mask": "face mask product photo",
+  "minimal-box": "storage box product photo studio",
+  "candle-set": "scented candles product photography",
+  "eye-lamp": "desk lamp product photo",
+  "smart-thermos": "thermos bottle product photography",
+  "light-windbreaker": "windbreaker jacket product photo",
+  "commute-backpack": "backpack product photo studio",
+  "running-shoes": "running shoes product photo",
+  "camp-chair": "camping chair product photo",
+  "sport-bottle": "water bottle product photography",
+  "hiking-belt": "fanny pack product photo",
+  "oat-gift": "gift box snacks product photography",
+  "oat-milk": "oat milk bottle product photo",
+  "coffee-concentrate": "coffee concentrate bottle product photo",
+  "multi-cooker": "kitchen appliance product photography",
+  "cordless-vacuum": "cordless vacuum cleaner product photo",
+  "mini-coffee-machine": "coffee machine product photography",
+  "smart-lamp": "desk lamp product photo",
+  "wireless-kit": "wireless keyboard and mouse product photo",
+  "designer-notebook": "notebook stationery product photo",
+  "desk-organizer": "desk organizer product photo"
+};
+
+// 使用 LoremFlickr 按关键词返回商品相关图片
+const buildImageUrl = (keyword, seed) => `https://loremflickr.com/1200/900/${encodeURIComponent(keyword.replace(/\s+/g, ','))}`;
+
+const productMedia = Object.fromEntries(
+  Object.entries(productImageKeywords).map(([id, keyword], index) => [
+    id,
+    (() => {
+      // 为首页轮播的九个商品指定固定 sig，保证图片稳定
+      const heroProductSeeds = {
+        "camp-chair": 201,
+        "sport-bottle": 202,
+        "hiking-belt": 203,
+        "minimal-box": 204,
+        "candle-set": 205,
+        "eye-lamp": 206,
+        "oat-gift": 207,
+        "oat-milk": 208,
+        "coffee-concentrate": 209
+      };
+      const seed = heroProductSeeds[id] || (index + 101);
+      return {
+        image: buildImageUrl(keyword, seed),
+        imageAlt: keyword
+      };
+    })()
+  ])
+);
+
+// Remove demo/example items from the static list (non-destructive change)
+const _removedDemoIds = ["light-windbreaker", "smart-lamp", "candle-set", "running-shoes"];
+const productListFiltered = productList.filter((p) => !_removedDemoIds.includes(p.id));
+const productListWithMedia = productListFiltered.map((product) => ({
+  ...product,
+  ...productMedia[product.id]
+}));
+
+// 关键词到类别的映射，用于将大类热搜词（如“露营装备”“露营套餐”）映射到产品的 `category` 字段
+const categoryKeywordMap = {
+  "露营": "运动户外",
+  "露营装备": "运动户外",
+  "露营套餐": "运动户外",
+  "冲锋衣": "运动户外",
+  "运动鞋": "服饰鞋包",
+  // 日用家居 相关映射，包含之前的小家电同义词以保持兼容
+  "日用家居": "日用家居",
+  "小家电": "日用家居",
+  "家电": "日用家居",
+  "便携饮品": "食品饮品",
+  "饮品": "食品饮品"
+};
 
 const withDetail = (product) => {
   if (!product) {
@@ -269,42 +349,56 @@ const withDetail = (product) => {
   };
 };
 
-const getProductById = (id) => withDetail(productList.find((item) => item.id === id));
+const getProductById = (id) => withDetail(productListWithMedia.find((item) => item.id === id));
 
 const getProductsByIds = (ids) => ids.map((id) => getProductById(id)).filter(Boolean);
 
 // API-backed fetch helpers
 import http from "@/api/http";
 
+const enrichWithStatic = (apiProduct) => {
+  const s = getProductById(apiProduct.id);
+  if (!s) return apiProduct;
+  return {
+    ...apiProduct,
+    image: apiProduct.coverUrl || s.image,
+  };
+};
+
 const fetchProducts = async ({ type, page = 0, size = 20 } = {}) => {
   try {
     const resp = await http.get("/api/products", { params: { type, page, size } });
     const data = resp.data;
     // backend returns a Page object under data (with .content array)
-    if (Array.isArray(data)) return data;
-    if (data && Array.isArray(data.content)) return data.content;
-    return [];
+    let list;
+    if (Array.isArray(data)) list = data;
+    else if (data && Array.isArray(data.content)) list = data.content;
+    else return [];
+    return list.map(enrichWithStatic);
   } catch (e) {
     // fallback to local static
     if (type === "hot") return getProductsByIds(hotProductIds);
     if (type === "new") return getProductsByIds(newProductIds);
-    return productList;
+    return productListWithMedia;
   }
 };
 
 const fetchProductById = async (id) => {
   try {
     const resp = await http.get(`/api/products/${id}`);
-    return resp.data || null;
+    const apiProduct = resp.data;
+    if (!apiProduct) return getProductById(id);
+    return enrichWithStatic(apiProduct);
   } catch (e) {
     return getProductById(id);
   }
 };
 
 export {
-  productList,
+  productListWithMedia as productList,
   hotProductIds,
   newProductIds,
+  categoryKeywordMap,
   getProductById,
   getProductsByIds,
   fetchProducts,

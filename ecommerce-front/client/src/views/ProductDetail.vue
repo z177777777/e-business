@@ -1,17 +1,15 @@
 <template>
   <div class="product-page">
-    <!-- 顶部导航已移除：不显示返回与首页按钮 -->
-
     <section v-if="product" class="product-shell">
       <div class="product-hero">
-        <div class="product-cover" :style="{ background: product.bg }">
+        <div class="product-cover" :style="getCoverStyle(product)">
           <div v-if="product.tag" class="cover-badge">{{ product.tag }}</div>
         </div>
         <div class="product-info">
           <div class="product-category">{{ product.category }}</div>
           <h1 class="product-title">{{ product.name }}</h1>
           <div class="product-sub">{{ product.subtitle }}</div>
-          <div class="price-row">￥{{ product.price }}</div>
+          <div class="price-row">￥{{ formatPrice(product.price) }}</div>
           <div class="meta-row">
             <span v-if="product.sold">销量 {{ product.sold }}</span>
             <span>48小时内发货</span>
@@ -22,9 +20,14 @@
               {{ item }}
             </div>
           </div>
+          <div v-if="product.stock != null && product.stock <= 0" style="margin-top:8px;color:#e03131;font-size:13px">暂时缺货</div>
           <div class="action-row">
-            <el-button type="primary" color="#ff6a3d" :loading="addingCart" @click="handleAddCart">加入购物车</el-button>
-            <el-button plain>收藏</el-button>
+            <el-button v-if="!isOutOfStock" type="primary" color="#ff6a3d" :loading="addingCart" @click="handleAddCart">加入购物车</el-button>
+            <el-button v-else disabled>已售罄</el-button>
+            <el-button v-if="isOutOfStock" type="warning" plain :loading="requestingRestock" @click="handleRequestRestock">催上货</el-button>
+            <el-button :type="favorited ? 'warning' : ''" :icon="favorited ? StarFilled : Star" :loading="togglingFav" @click="handleToggleFav" plain>
+              {{ favorited ? '取消收藏' : '收藏' }}
+            </el-button>
           </div>
         </div>
       </div>
@@ -37,6 +40,68 @@
         <div class="detail-card">
           <h3>发货与售后</h3>
           <p>官方仓库发货，支持7天无理由退换，售后无忧。</p>
+        </div>
+      </div>
+
+      <div class="reviews-card">
+        <div class="reviews-head">
+          <div>
+            <h3>商品评价</h3>
+            <p>普通用户可查看评价，已收货用户可发布评价。</p>
+          </div>
+          <el-tag v-if="canReview" type="success" effect="dark">已解锁评价</el-tag>
+          <el-tag v-else type="info" effect="plain">收货后可评价</el-tag>
+        </div>
+
+        <div v-if="canReview" class="review-form">
+          <div class="review-form-title">写评价</div>
+          <el-rate v-model="reviewForm.rating" :max="5" />
+          <el-input
+            v-model="reviewForm.content"
+            type="textarea"
+            :rows="4"
+            maxlength="500"
+            show-word-limit
+            placeholder="分享你的真实使用感受"
+          />
+          <div style="margin-top:8px">
+            <el-upload :http-request="handleImageUpload" :show-file-list="false" multiple>
+              <el-button size="small">上传图片</el-button>
+            </el-upload>
+            <div style="display:flex; gap:8px; margin-top:8px">
+              <div v-for="(img, idx) in reviewForm.images" :key="idx" style="position:relative">
+                <img :src="img" style="width:96px;height:96px;object-fit:cover;border:1px solid #eee;border-radius:4px" />
+                <el-button size="mini" type="danger" style="position:absolute;right:4px;top:4px" @click="removeReviewImage(idx)">删除</el-button>
+              </div>
+            </div>
+          </div>
+          <div class="review-form-actions">
+            <el-button type="primary" color="#ff6a3d" :loading="submittingReview" @click="handleSubmitReview">发布评价</el-button>
+          </div>
+        </div>
+
+        <el-empty v-if="!reviewLoading && !reviews.length" description="暂无评价" />
+        <div v-else class="review-list">
+          <div v-for="item in reviews" :key="item.id" class="review-item">
+            <div class="review-user">
+              <div class="review-avatar">{{ item.nickname ? item.nickname.slice(0, 1) : '匿' }}</div>
+              <div class="review-user-info">
+                <div class="review-nickname">{{ item.nickname || '匿名用户' }}</div>
+                <div class="review-time">{{ formatTime(item.createdAt) }}</div>
+              </div>
+              <el-rate :model-value="item.rating" disabled show-score text-color="#ff9900" score-template="{value}分" />
+            </div>
+            <div class="review-content">{{ item.content }}</div>
+            <div v-if="item.imageUrls && item.imageUrls.length" style="display:flex; gap:8px; flex-wrap:wrap">
+              <img
+                v-for="(img, idx) in item.imageUrls"
+                :key="idx"
+                :src="img"
+                style="width:80px;height:80px;object-fit:cover;border:1px solid #eee;border-radius:4px;cursor:pointer"
+                @click="previewReviewImage(img)"
+              />
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -56,34 +121,75 @@ import { ElMessage } from "element-plus";
 import { useAuthStore } from "@/store/auth";
 import { fetchProductById } from "@/data/products";
 import { addCartItem } from "@/api/cart";
+import { toggleFavorite, isFavorited as checkFavorited } from "@/api/favorites";
+import { Star, StarFilled } from "@element-plus/icons-vue";
+import { uploadImage } from "@/api/files";
+import { listProductReviews, submitProductReview } from "@/api/reviews";
+import http from "@/api/http";
 
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
-const isAuthed = computed(() => !!authStore.token);
-
 const productId = String(route.params.id || "");
 const product = ref(null);
 const loading = ref(true);
 const addingCart = ref(false);
+const requestingRestock = ref(false);
+const favorited = ref(false);
+const togglingFav = ref(false);
+const reviews = ref([]);
+const reviewLoading = ref(false);
+const canReview = ref(false);
+const submittingReview = ref(false);
+const reviewForm = ref({ rating: 5, content: "", images: [] });
+
+const isOutOfStock = computed(() => {
+  const p = product.value;
+  return p && p.stock != null && p.stock <= 0;
+});
+
+const getCoverStyle = (item) => {
+  const img = item?.image || item?.coverUrl;
+  if (img) {
+    return { background: `url(${img}) center/cover no-repeat, #fff` };
+  }
+  return { background: "#fff" };
+};
+
+const formatPrice = (p) => {
+  if (p == null) return "0";
+  const n = Number(p);
+  if (Number.isInteger(n)) return n.toString();
+  return n.toFixed(2);
+};
 
 onMounted(async () => {
   loading.value = true;
   try {
     product.value = await fetchProductById(productId);
+    favorited.value = checkFavorited(product.value?.id);
   } catch (e) {
     product.value = null;
   } finally {
     loading.value = false;
   }
+
+  await loadReviews();
 });
 
-const handleBack = () => {
-  if (window.history.length > 1) {
-    router.back();
-    return;
+const loadReviews = async () => {
+  reviewLoading.value = true;
+  try {
+    const resp = await listProductReviews(productId);
+    const data = resp.data || {};
+    reviews.value = Array.isArray(data.reviews) ? data.reviews : [];
+    canReview.value = !!data.canReview;
+  } catch (e) {
+    reviews.value = [];
+    canReview.value = false;
+  } finally {
+    reviewLoading.value = false;
   }
-  router.push("/home");
 };
 
 const handleAddCart = async () => {
@@ -102,6 +208,95 @@ const handleAddCart = async () => {
     addingCart.value = false;
   }
 };
+
+const handleRequestRestock = async () => {
+  if (!authStore.token) {
+    router.push("/login");
+    return;
+  }
+  requestingRestock.value = true;
+  try {
+    await http.post(`/api/products/${productId}/request-restock`);
+    ElMessage.success("已提交催上货请求");
+  } catch (e) {
+    ElMessage.error("操作失败");
+  } finally {
+    requestingRestock.value = false;
+  }
+};
+
+const handleToggleFav = async () => {
+  if (!product.value) return;
+  togglingFav.value = true;
+  try {
+    const added = toggleFavorite({
+      id: product.value.id,
+      name: product.value.name,
+      price: product.value.price,
+      subtitle: product.value.subtitle,
+      image: product.value.image || product.value.coverUrl,
+      category: product.value.category
+    });
+    favorited.value = added;
+    ElMessage.success(added ? "已加入收藏" : "已取消收藏");
+  } finally {
+    togglingFav.value = false;
+  }
+};
+
+const formatTime = (value) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleString();
+};
+
+const handleImageUpload = async (options) => {
+  const file = options.file;
+  try {
+    const res = await uploadImage(file);
+    const url = res.data;
+    reviewForm.value.images.push(url);
+    ElMessage.success("图片上传成功");
+  } catch (e) {
+    ElMessage.error("图片上传失败");
+  }
+};
+
+const removeReviewImage = (index) => {
+  reviewForm.value.images.splice(index, 1);
+};
+
+const previewReviewImage = (url) => {
+  window.open(url, "_blank");
+};
+
+const handleSubmitReview = async () => {
+  if (!canReview.value) {
+    ElMessage.warning("只有已收货用户才能发布评价");
+    return;
+  }
+  const content = String(reviewForm.value.content || "").trim();
+  if (!content) {
+    ElMessage.warning("请输入评价内容");
+    return;
+  }
+  submittingReview.value = true;
+  try {
+    await submitProductReview(productId, {
+      rating: reviewForm.value.rating,
+      content,
+      imageUrls: reviewForm.value.images
+    });
+    ElMessage.success("评价已发布");
+    reviewForm.value.content = "";
+    reviewForm.value.rating = 5;
+    reviewForm.value.images = [];
+    await loadReviews();
+  } finally {
+    submittingReview.value = false;
+  }
+};
 </script>
 
 <style scoped>
@@ -111,14 +306,6 @@ const handleAddCart = async () => {
   display: flex;
   flex-direction: column;
   gap: 24px;
-}
-
-.product-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
 }
 
 .product-header {
@@ -244,6 +431,102 @@ const handleAddCart = async () => {
   gap: 18px;
 }
 
+.reviews-card {
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 22px;
+  padding: 22px 24px;
+  box-shadow: var(--shadow-soft);
+  display: grid;
+  gap: 18px;
+}
+
+.reviews-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.reviews-head h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.reviews-head p {
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.review-form {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 18px;
+  background: #f8fafc;
+}
+
+.review-form-title {
+  font-weight: 600;
+}
+
+.review-form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.review-list {
+  display: grid;
+  gap: 14px;
+}
+
+.review-item {
+  padding: 14px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  display: grid;
+  gap: 10px;
+  background: #fff;
+}
+
+.review-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.review-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff9f6e, #ff6a3d);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+}
+
+.review-user-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.review-nickname {
+  font-weight: 600;
+}
+
+.review-time {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.review-content {
+  line-height: 1.7;
+  color: #374151;
+}
+
 .detail-card {
   background: #fff;
   border-radius: 22px;
@@ -285,6 +568,10 @@ const handleAddCart = async () => {
 @media (max-width: 900px) {
   .detail-panels {
     grid-template-columns: 1fr;
+  }
+
+  .reviews-head {
+    flex-direction: column;
   }
 }
 

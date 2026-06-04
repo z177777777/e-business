@@ -34,6 +34,7 @@ public class SecurityConfig {
       .antMatchers("/api/auth/**").permitAll()
       .antMatchers(HttpMethod.GET, "/uploads/**").permitAll()
       .antMatchers(HttpMethod.GET, "/api/products/**").permitAll()
+      .antMatchers("/ws/**", "/ws/**/**").permitAll()
       .anyRequest().authenticated();
 
     http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

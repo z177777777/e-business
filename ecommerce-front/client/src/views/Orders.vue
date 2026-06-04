@@ -4,10 +4,15 @@
 
     <section class="orders-shell">
       <h2 class="page-title">我的订单</h2>
+
+      <el-tabs v-model="activeStatus" @tab-change="onStatusChange" class="order-tabs">
+        <el-tab-pane v-for="tab in STATUS_TABS" :key="tab.value" :label="tab.label" :name="tab.value" />
+      </el-tabs>
+
       <div v-if="loading" class="loading-block short"></div>
-      <div v-else-if="orders.length === 0" class="orders-empty">暂无订单</div>
+      <div v-else-if="filteredOrders.length === 0" class="orders-empty">{{ activeStatus === 'ALL' ? '暂无订单' : '该状态下暂无订单' }}</div>
       <div v-else class="orders-list">
-        <article v-for="order in orders" :key="order.id" class="order-card" @click="goDetail(order)" role="button">
+        <article v-for="order in filteredOrders" :key="order.id" class="order-card" @click="goDetail(order)" role="button">
           <div class="order-head">
             <div class="meta">
               <div class="order-no">订单号：<span>{{ order.orderNo }}</span></div>
@@ -32,6 +37,9 @@
             <div class="order-total">总金额：<strong>￥{{ formatMoney(order.totalAmount) }}</strong></div>
             <div class="order-actions">
               <el-button v-if="order.status === 'PENDING_PAYMENT'" type="primary" color="#ff6a3d" :loading="payingOrderId === order.id" @click.stop.prevent="handlePay(order)">模拟支付</el-button>
+              <el-button v-if="order.status === 'PENDING_PAYMENT'" plain type="danger" :loading="cancellingOrderId === order.id" @click.stop.prevent="handleCancel(order)">取消订单</el-button>
+              <el-button v-if="order.status === 'PAID'" type="warning" :loading="refundingOrderId === order.id" @click.stop.prevent="handleRefund(order)">申请退款</el-button>
+              <el-button v-if="order.status === 'SHIPPED'" type="primary" plain @click.stop.prevent="handleReceive(order)">确认收货</el-button>
             </div>
           </div>
         </article>
@@ -41,15 +49,39 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { ElMessage } from "element-plus";
-import { listOrders, payOrder } from "@/api/order";
+import { ElMessage, ElMessageBox } from "element-plus";
+import { listOrders, payOrder, receiveOrder, cancelOrder, requestRefund } from "@/api/order";
+import { getBalance, pay as walletPay } from "@/api/wallet";
 
 const router = useRouter();
 const orders = ref([]);
 const loading = ref(true);
 const payingOrderId = ref(null);
+const cancellingOrderId = ref(null);
+const refundingOrderId = ref(null);
+const activeStatus = ref("ALL");
+
+const STATUS_TABS = [
+  { label: "全部", value: "ALL" },
+  { label: "待支付", value: "PENDING_PAYMENT" },
+  { label: "已支付", value: "PAID" },
+  { label: "已发货", value: "SHIPPED" },
+  { label: "已收货", value: "RECEIVED" },
+  { label: "退款中", value: "REFUND_REQUESTED" },
+  { label: "已退款", value: "REFUNDED" },
+  { label: "已取消", value: "CANCELLED" }
+];
+
+const filteredOrders = computed(() => {
+  if (activeStatus.value === "ALL") return orders.value;
+  return orders.value.filter(o => o.status === activeStatus.value);
+});
+
+const onStatusChange = () => {
+  // tab change triggers recompute via computed
+};
 
 const loadOrders = async () => {
   loading.value = true;
@@ -72,13 +104,98 @@ const formatMoney = (v) => Number(v || 0).toFixed(2);
 const formatTime = (v) => (v ? new Date(v).toLocaleString() : "-");
 
 const handlePay = async (order) => {
+  const total = Number(order.totalAmount || 0);
+  const bal = await getBalance();
+  if (total > 0 && bal < total) {
+    try {
+      await ElMessageBox.confirm(`余额不足（当前 ￥${bal.toFixed(2)}），需支付 ￥${total.toFixed(2)}。是否前往钱包充值？`, "余额不足", {
+        confirmButtonText: "去充值",
+        cancelButtonText: "取消",
+        type: "warning",
+        customClass: "pretty-confirm-box",
+        distinguishCancelAndClose: true,
+        center: true
+      });
+      router.push({ path: "/profile/wallet", query: { shortfall: (total - bal).toFixed(2) } });
+    } catch (e) {
+      // 取消
+    }
+    return;
+  }
   payingOrderId.value = order.id;
   try {
     const res = await payOrder(order.id);
-    ElMessage.success(`订单 ${res.data.orderNo} 支付成功`);
+    if (total > 0) {
+      await walletPay(total, res.data.orderNo);
+    }
+    ElMessage.success(`订单 ${res.data.orderNo} 支付成功` + (total > 0 ? `，已从钱包扣除 ￥${total.toFixed(2)}` : ""));
     await loadOrders();
   } finally {
     payingOrderId.value = null;
+  }
+};
+
+const handleReceive = async (order) => {
+  try {
+    const res = await receiveOrder(order.id);
+    if (res && res.data) {
+      ElMessage.success('确认收货成功');
+      await loadOrders();
+    } else {
+      ElMessage.error('确认收货失败');
+    }
+  } catch (e) {
+    ElMessage.error(e?.response?.data?.msg || '确认收货失败');
+  }
+};
+
+const handleCancel = async (order) => {
+  try {
+    await ElMessageBox.confirm(`确认取消订单「${order.orderNo}」？取消后订单状态将变为已取消。`, "确认取消订单", {
+      confirmButtonText: "确认取消",
+      cancelButtonText: "暂不取消",
+      type: "warning",
+      customClass: "pretty-confirm-box",
+      distinguishCancelAndClose: true,
+      center: true
+    });
+  } catch (e) {
+    return;
+  }
+  cancellingOrderId.value = order.id;
+  try {
+    await cancelOrder(order.id);
+    ElMessage.success("订单已取消");
+    await loadOrders();
+  } catch (e) {
+    ElMessage.error(e?.response?.data?.msg || "取消订单失败");
+  } finally {
+    cancellingOrderId.value = null;
+  }
+};
+
+const handleRefund = async (order) => {
+  try {
+    await ElMessageBox.confirm(`确认对订单「${order.orderNo}」申请退款？提交后将由管理员审核。`, "确认申请退款", {
+      confirmButtonText: "确认申请",
+      cancelButtonText: "暂不申请",
+      type: "warning",
+      customClass: "pretty-confirm-box",
+      distinguishCancelAndClose: true,
+      center: true
+    });
+  } catch (e) {
+    return;
+  }
+  refundingOrderId.value = order.id;
+  try {
+    await requestRefund(order.id);
+    ElMessage.success("退款申请已提交，请等待管理员审核");
+    await loadOrders();
+  } catch (e) {
+    ElMessage.error(e?.response?.data?.msg || "申请退款失败");
+  } finally {
+    refundingOrderId.value = null;
   }
 };
 
@@ -90,7 +207,11 @@ const statusText = (status) => {
   const map = {
     PENDING_PAYMENT: "待支付",
     PAID: "已支付",
-    CANCELLED: "已取消"
+    SHIPPED: "已发货",
+    RECEIVED: "已收货",
+    CANCELLED: "已取消",
+    REFUND_REQUESTED: "退款中",
+    REFUNDED: "已退款"
   };
   return map[status] || status;
 };
@@ -98,6 +219,7 @@ const statusText = (status) => {
 const statusTagType = (status) => {
   if (status === "PAID") return "success";
   if (status === "PENDING_PAYMENT") return "warning";
+  if (status === "SHIPPED") return "info";
   return "info";
 };
 </script>
@@ -124,6 +246,10 @@ const statusTagType = (status) => {
 .order-total { font-size:16px; color:var(--text-primary) }
 .order-actions { display:flex; gap:8px }
 .orders-empty { padding:40px; text-align:center; color:var(--text-secondary) }
+
+.order-tabs {
+  margin-bottom: 8px;
+}
 
 @media (max-width: 720px) {
   .items-list-item { flex-direction: column; align-items: flex-start }

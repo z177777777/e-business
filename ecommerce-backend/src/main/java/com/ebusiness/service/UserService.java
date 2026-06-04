@@ -29,7 +29,7 @@ public class UserService {
 
   public UserProfileResponse getProfile() {
     User user = getCurrentUser();
-    return new UserProfileResponse(user.getId(), user.getEmail(), user.getNickname(), user.getAvatarUrl());
+    return new UserProfileResponse(user.getId(), user.getEmail(), user.getNickname(), user.getAvatarUrl(), user.getRole());
   }
 
   public UserProfileResponse updateProfile(UpdateProfileRequest request) {
@@ -41,7 +41,7 @@ public class UserService {
       user.setAvatarUrl(request.getAvatarUrl());
     }
     userRepository.save(user);
-    return new UserProfileResponse(user.getId(), user.getEmail(), user.getNickname(), user.getAvatarUrl());
+    return new UserProfileResponse(user.getId(), user.getEmail(), user.getNickname(), user.getAvatarUrl(), user.getRole());
   }
 
   public UserProfileResponse updateEmail(UpdateEmailRequest request) {
@@ -53,7 +53,7 @@ public class UserService {
     verificationCodeService.verifyCode(newEmail, "CHANGE_EMAIL", request.getCode());
     user.setEmail(newEmail);
     userRepository.save(user);
-    return new UserProfileResponse(user.getId(), user.getEmail(), user.getNickname(), user.getAvatarUrl());
+    return new UserProfileResponse(user.getId(), user.getEmail(), user.getNickname(), user.getAvatarUrl(), user.getRole());
   }
 
   public void updatePassword(UpdatePasswordRequest request) {

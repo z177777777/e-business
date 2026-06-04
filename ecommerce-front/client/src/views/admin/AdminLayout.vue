@@ -3,7 +3,7 @@
     <aside class="admin-sidebar">
       <div class="brand">
         <div class="brand-title">e-business</div>
-        <div class="brand-subtitle">Admin Console</div>
+        <div class="brand-subtitle">管理后台</div>
       </div>
 
       <el-menu
@@ -18,6 +18,8 @@
         <el-menu-item index="/admin/users">用户管理</el-menu-item>
         <el-menu-item index="/admin/products">商品管理</el-menu-item>
         <el-menu-item index="/admin/orders">订单管理</el-menu-item>
+        <el-menu-item index="/admin/feedback">用户反馈</el-menu-item>
+        <el-menu-item index="/admin/csr-applications">客服申请</el-menu-item>
       </el-menu>
     </aside>
 
@@ -52,21 +54,30 @@ const activePath = computed(() => route.path);
 const adminLabel = computed(() => authStore.user?.email || "admin@local");
 
 const handleLogout = async () => {
+  // 先确认（用户取消直接返回）
   try {
-    await ElMessageBox.confirm("确定要退出管理员后台吗？", "提示", {
-      confirmButtonText: "退出",
-      cancelButtonText: "取消",
-      type: "warning"
+    await ElMessageBox.confirm("退出后将返回登录页，未保存的后台操作不会继续保留。", "退出管理员后台", {
+      confirmButtonText: "继续退出",
+      cancelButtonText: "留在后台",
+      type: "warning",
+      customClass: "pretty-confirm-box",
+      distinguishCancelAndClose: true,
+      center: true
     });
-    await logoutApi();
-  } catch (error) {
-    if (error !== "cancel") {
-      // ignore logout api errors; local session still cleared
-    }
-  } finally {
-    authStore.clearSession();
-    router.push("/admin/login");
+  } catch (e) {
+    // 取消或关闭弹窗
+    return;
   }
+
+  // 调用登出 API（失败不阻止本地清理）
+  try {
+    await logoutApi();
+  } catch (e) {
+    console.warn("admin logout api failed", e);
+  }
+
+  authStore.clearSession();
+  router.push("/admin/login");
 };
 </script>
 

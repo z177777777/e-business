@@ -16,13 +16,18 @@
               <el-input v-model="form.code" placeholder="输入6位验证码">
                 <template #append>
                   <el-button :disabled="countdown > 0" @click="handleSendCode">
-                    {{ countdown > 0 ? `${countdown}s` : "Send" }}
+                    {{ countdown > 0 ? `${countdown}s` : "发送" }}
                   </el-button>
                 </template>
               </el-input>
             </el-form-item>
             <el-form-item label="新密码" prop="newPassword">
               <el-input v-model="form.newPassword" type="password" show-password placeholder="请输入新密码" />
+              <div class="password-strength" v-if="form.newPassword">
+                <span class="strength-label">密码强度：</span>
+                <span :class="['strength-value', `strength-${passwordStrength.level}`]">{{ passwordStrength.label }}</span>
+                <span class="strength-tip">建议至少8位，包含大小写字母、数字和符号</span>
+              </div>
             </el-form-item>
           </div>
           <el-button type="primary" color="#ff6a3d" :loading="loading" @click="handleReset" style="width: 100%; margin-top: 18px;">
@@ -30,7 +35,8 @@
           </el-button>
         </el-form>
         <div class="auth-footer">
-          <router-link to="/login">← 登录</router-link>
+          <el-button text type="primary" :loading="contactLoading" class="contact-admin-btn" @click="handleContactAdmin">联系管理员</el-button>
+          <router-link to="/login" class="back-login-link">← 登录</router-link>
         </div>
       </div>
     </div>
@@ -38,14 +44,15 @@
 </template>
 
 <script setup>
-import { reactive, ref } from "vue";
+import { computed, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
-import { resetPassword, sendCode } from "@/api/auth";
+import { resetPassword, requestPasswordResetSupport, sendCode } from "@/api/auth";
 
 const router = useRouter();
 const formRef = ref();
 const loading = ref(false);
+const contactLoading = ref(false);
 const countdown = ref(0);
 let timer = null;
 
@@ -60,6 +67,21 @@ const rules = {
   code: [{ required: true, message: "请输入验证码", trigger: "blur" }],
   newPassword: [{ required: true, message: "请输入新密码", trigger: "blur" }]
 };
+
+const calcPasswordStrength = (pwd) => {
+  const value = String(pwd || "");
+  if (!value) return { level: "none", label: "" };
+  let score = 0;
+  if (value.length >= 8) score += 1;
+  if (/[a-z]/.test(value) && /[A-Z]/.test(value)) score += 1;
+  if (/\d/.test(value)) score += 1;
+  if (/[^A-Za-z0-9]/.test(value)) score += 1;
+  if (score <= 1) return { level: "weak", label: "弱" };
+  if (score <= 3) return { level: "medium", label: "中" };
+  return { level: "strong", label: "强" };
+};
+
+const passwordStrength = computed(() => calcPasswordStrength(form.newPassword));
 
 const startCountdown = () => {
   countdown.value = 60;
@@ -96,4 +118,70 @@ const handleReset = async () => {
     loading.value = false;
   }
 };
+
+const handleContactAdmin = async () => {
+  if (!form.email) {
+    ElMessage.warning("请先输入邮箱");
+    return;
+  }
+  contactLoading.value = true;
+  try {
+    await requestPasswordResetSupport({
+      email: form.email,
+      message: "用户在找回密码页面请求管理员协助重置密码"
+    });
+    ElMessage.success("已向管理员发送重置请求");
+  } catch (e) {
+    console.warn("request password reset support failed", e);
+  } finally {
+    contactLoading.value = false;
+  }
+};
 </script>
+
+<style scoped>
+.password-strength {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.strength-label,
+.strength-tip {
+  color: var(--text-secondary);
+}
+
+.strength-value {
+  font-weight: 700;
+}
+
+.strength-weak {
+  color: #e03131;
+}
+
+.strength-medium {
+  color: #f08c00;
+}
+
+.strength-strong {
+  color: #2f9e44;
+}
+
+.auth-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.contact-admin-btn {
+  padding: 0;
+}
+
+.back-login-link {
+  margin-left: auto;
+}
+</style>

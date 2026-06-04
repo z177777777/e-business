@@ -1,17 +1,5 @@
 @echo off
-setlocal
-
-call :killPort 8080
-call :killPort 5173
+powershell -NoProfile -Command "try { $ports = @(8080,5173); foreach($p in $ports){ $conns = Get-NetTCPConnection -LocalPort $p -State Listen -ErrorAction SilentlyContinue; if($conns){ $pids = $conns | Select-Object -ExpandProperty OwningProcess -Unique; foreach($pid in $pids){ Write-Output \"Stopping PID $pid on port $p\"; Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue } } else { Write-Output \"Port $p -> not listening\" } } } catch { Write-Output \"Error while stopping ports: $_\"; exit 1 }"
 
 echo Backend and client processes stopped (if they were running).
-endlocal
-exit /b 0
-
-:killPort
-set PORT=%~1
-for /f "tokens=5" %%a in ('netstat -ano ^| findstr /R /C:":%PORT% .*LISTENING"') do (
-  echo Stopping process on port %PORT% (PID %%a)
-  taskkill /F /PID %%a >nul 2>&1
-)
 exit /b 0

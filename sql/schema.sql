@@ -79,6 +79,20 @@ CREATE TABLE IF NOT EXISTS orders (
   INDEX idx_orders_status (status)
 );
 
+CREATE TABLE IF NOT EXISTS feedbacks (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  user_id BIGINT,
+  email VARCHAR(128) NOT NULL,
+  nickname VARCHAR(64),
+  type VARCHAR(20) NOT NULL,
+  content TEXT NOT NULL,
+  status INT NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_feedbacks_status (status),
+  INDEX idx_feedbacks_user (user_id)
+);
+
 CREATE TABLE IF NOT EXISTS order_items (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   order_id BIGINT NOT NULL,
@@ -91,4 +105,30 @@ CREATE TABLE IF NOT EXISTS order_items (
   quantity INT NOT NULL,
   subtotal DECIMAL(12,2) NOT NULL,
   INDEX idx_order_items_order (order_id)
+);
+
+CREATE TABLE IF NOT EXISTS chat_messages (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  sender_id BIGINT NOT NULL,
+  receiver_id BIGINT NOT NULL,
+  content TEXT,
+  message_type VARCHAR(32) NOT NULL DEFAULT 'TEXT',
+  order_id BIGINT,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_chat_messages_sender (sender_id),
+  INDEX idx_chat_messages_receiver (receiver_id),
+  INDEX idx_chat_messages_conversation (sender_id, receiver_id)
+);
+
+CREATE TABLE IF NOT EXISTS csr_applications (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  user_id BIGINT NOT NULL,
+  email VARCHAR(128) NOT NULL,
+  nickname VARCHAR(64) NOT NULL,
+  note VARCHAR(512),
+  status INT NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_csr_applications_user (user_id),
+  INDEX idx_csr_applications_status (status)
 );

@@ -91,6 +91,28 @@
         </template>
       </el-dialog>
 
+      <el-dialog title="裁剪头像" v-model="cropVisible" width="420px" :close-on-click-modal="false">
+        <div class="crop-container" ref="cropContainerRef"
+          @mousedown="onCropMouseDown" @mousemove="onCropMouseMove" @mouseup="onCropMouseUp" @mouseleave="onCropMouseUp"
+          @touchstart.prevent="onCropTouchStart" @touchmove.prevent="onCropTouchMove" @touchend="onCropMouseUp">
+          <img v-if="cropImgSrc" :src="cropImgSrc" class="crop-image" ref="cropImgRef"
+            :style="{ transform: `translate(${cropX}px, ${cropY}px) scale(${cropScale})` }"
+            @load="onCropImgLoad"
+            draggable="false" />
+          <div class="crop-overlay"></div>
+          <div class="crop-border"></div>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px; margin-top:16px; padding:0 4px;">
+          <span style="font-size:12px; color:var(--text-secondary); white-space:nowrap;">缩放</span>
+          <el-slider v-model="cropScale" :min="0.2" :max="5" :step="0.01" style="flex:1;" />
+          <el-button size="mini" @click="resetCrop">重置</el-button>
+        </div>
+        <template #footer>
+          <el-button @click="cropVisible = false">取消</el-button>
+          <el-button type="primary" color="#ff6a3d" :loading="cropping" @click="confirmCrop">确定</el-button>
+        </template>
+      </el-dialog>
+
       <div class="profile-card">
         <h3 class="section-title">修改邮箱</h3>
         <el-form :model="emailForm" label-position="top">
@@ -118,6 +140,11 @@
           </el-form-item>
           <el-form-item label="新密码">
             <el-input v-model="passwordForm.newPassword" type="password" show-password />
+            <div class="password-strength" v-if="passwordForm.newPassword">
+              <span class="strength-label">密码强度：</span>
+              <span :class="['strength-value', `strength-${passwordStrength.level}`]">{{ passwordStrength.label }}</span>
+              <span class="strength-tip">建议至少8位，包含大小写字母、数字和符号</span>
+            </div>
           </el-form-item>
           <el-button type="primary" color="#ff6a3d" :loading="savingPassword" @click="savePassword">更新密码</el-button>
         </el-form>
@@ -129,15 +156,16 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { regionOptions } from "@/data/regions";
 import { useRouter } from "vue-router";
-import { ElMessage } from "element-plus";
+import { ElMessage, ElMessageBox } from "element-plus";
 import { logout, sendCode } from "@/api/auth";
 import { getProfile, updateEmail, updatePassword, updateProfile } from "@/api/user";
 import { uploadImage } from "@/api/files";
-// 使用 localStorage 存储地址（不调用后端）
+// 使用统一地址 API（按账号隔离）
 import { useAuthStore } from "@/store/auth";
+import { listAddresses, createAddress, updateAddress, deleteAddress, setDefaultAddress } from "@/api/address";
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -162,6 +190,21 @@ const passwordForm = reactive({
   oldPassword: "",
   newPassword: ""
 });
+
+const calcPasswordStrength = (pwd) => {
+  const value = String(pwd || "");
+  if (!value) return { level: "none", label: "" };
+  let score = 0;
+  if (value.length >= 8) score += 1;
+  if (/[a-z]/.test(value) && /[A-Z]/.test(value)) score += 1;
+  if (/\d/.test(value)) score += 1;
+  if (/[^A-Za-z0-9]/.test(value)) score += 1;
+  if (score <= 1) return { level: "weak", label: "弱" };
+  if (score <= 3) return { level: "medium", label: "中" };
+  return { level: "strong", label: "强" };
+};
+
+const passwordStrength = computed(() => calcPasswordStrength(passwordForm.newPassword));
 
 const saving = ref(false);
 const savingEmail = ref(false);
@@ -190,8 +233,8 @@ const formatAddress = (addr) => {
 
 const loadAddresses = async () => {
   try {
-    const raw = localStorage.getItem('addresses');
-    addresses.value = raw ? JSON.parse(raw) : [];
+    const res = await listAddresses();
+    addresses.value = res.data || [];
   } catch (e) {
     addresses.value = [];
   }
@@ -226,62 +269,195 @@ const saveAddr = async () => {
   }
   const regionText = addrForm.regionPath.join(" / ");
   const full = [regionText, addrForm.detail].filter(Boolean).join(" ");
-  // localStorage 模拟 CRUD
-  if (addrForm.id) {
-    const idx = addresses.value.findIndex(a => a.id === addrForm.id);
-    if (idx !== -1) {
-      addresses.value[idx] = {
-        ...addresses.value[idx],
-        name: addrForm.name,
-        phone: addrForm.phone,
-        regionPath: [...addrForm.regionPath],
-        regionText,
-        detail: addrForm.detail,
-        full,
-        isDefault: addrForm.isDefault
-      };
+  try {
+    if (addrForm.id) {
+      await updateAddress(addrForm.id, { ...addrForm, regionText, full });
+      ElMessage.success("地址已更新");
+    } else {
+      const res = await createAddress({ ...addrForm, regionText, full });
+      // 如果后端返回新 id，赋值以保持一致
+      addrForm.id = res.data?.id ?? addrForm.id;
+      ElMessage.success("地址已新增");
     }
-  } else {
-    const id = Date.now();
-    addresses.value.push({
-      id,
-      name: addrForm.name,
-      phone: addrForm.phone,
-      regionPath: [...addrForm.regionPath],
-      regionText,
-      detail: addrForm.detail,
-      full,
-      isDefault: addrForm.isDefault
-    });
-    addrForm.id = id;
+    if (addrForm.isDefault) {
+      await setDefaultAddress(addrForm.id);
+    }
+  } catch (e) {
+    console.warn(e);
+    ElMessage.error("保存地址失败");
+  } finally {
+    addrVisible.value = false;
+    await loadAddresses();
   }
-  if (addrForm.isDefault) {
-    addresses.value.forEach(a => { a.isDefault = (a.id === addrForm.id); });
-  }
-  try { localStorage.setItem('addresses', JSON.stringify(addresses.value)); } catch (e) { console.warn(e); }
-  addrVisible.value = false;
-  await loadAddresses();
-  ElMessage.success("地址已保存");
 };
 
 const remove = async (id) => {
-  const idx = addresses.value.findIndex(a => a.id === id);
-  if (idx === -1) return;
-  addresses.value.splice(idx, 1);
-  try { localStorage.setItem('addresses', JSON.stringify(addresses.value)); } catch (e) { console.warn(e); }
-  ElMessage.success("地址已删除");
+  const confirmed = await ElMessageBox.confirm(`确认删除该地址？`, "删除地址", {
+    confirmButtonText: "删除",
+    cancelButtonText: "取消",
+    type: "warning",
+    customClass: "pretty-confirm-box pretty-confirm-box--danger",
+    distinguishCancelAndClose: true,
+    center: true
+  }).then(() => true).catch(() => false);
+  if (!confirmed) return;
+  try {
+    await deleteAddress(id);
+    ElMessage.success("地址已删除");
+    await loadAddresses();
+  } catch (e) {
+    console.warn(e);
+    ElMessage.error("删除失败");
+  }
 };
 
 const setDefault = async (id) => {
-  addresses.value.forEach(a => { a.isDefault = (a.id === id); });
-  try { localStorage.setItem('addresses', JSON.stringify(addresses.value)); } catch (e) { console.warn(e); }
-  ElMessage.success("已设为默认地址");
+  try {
+    await setDefaultAddress(id);
+    ElMessage.success("已设为默认地址");
+    await loadAddresses();
+  } catch (e) {
+    console.warn(e);
+    ElMessage.error("设置默认地址失败");
+  }
 };
 
 const handleUpload = async (options) => {
-  const res = await uploadImage(options.file);
-  profileForm.avatarUrl = res.data;
-  ElMessage.success("上传成功");
+  const file = options.file;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    cropImgSrc.value = e.target.result;
+    imgW.value = 0;
+    imgH.value = 0;
+    cropVisible.value = true;
+    cropX.value = 0;
+    cropY.value = 0;
+  };
+  reader.readAsDataURL(file);
+};
+
+// Crop state
+const cropVisible = ref(false);
+const cropImgSrc = ref("");
+const cropImgRef = ref(null);
+const cropX = ref(0);
+const cropY = ref(0);
+const cropScale = ref(1);
+const cropping = ref(false);
+const cropContainerRef = ref(null);
+const imgW = ref(0);
+const imgH = ref(0);
+
+const CONTAINER = 320;
+const CROP_SIZE = 280;
+const OUT_SIZE = 400;
+
+const onCropImgLoad = () => {
+  const img = cropImgRef.value;
+  if (!img) return;
+  imgW.value = img.naturalWidth;
+  imgH.value = img.naturalHeight;
+  const fitScale = Math.max(CROP_SIZE / imgW.value, CROP_SIZE / imgH.value);
+  cropScale.value = Math.round(fitScale * 100) / 100;
+  cropX.value = 0;
+  cropY.value = 0;
+};
+
+const resetCrop = () => {
+  if (imgW.value > 0 && imgH.value > 0) {
+    const fitScale = Math.max(CROP_SIZE / imgW.value, CROP_SIZE / imgH.value);
+    cropScale.value = Math.round(fitScale * 100) / 100;
+  } else {
+    cropScale.value = 1;
+  }
+  cropX.value = 0;
+  cropY.value = 0;
+};
+
+// Drag state
+const isDragging = ref(false);
+const dragStartX = ref(0);
+const dragStartY = ref(0);
+
+const onCropMouseDown = (e) => {
+  isDragging.value = true;
+  dragStartX.value = e.clientX - cropX.value;
+  dragStartY.value = e.clientY - cropY.value;
+};
+
+const onCropMouseMove = (e) => {
+  if (!isDragging.value) return;
+  cropX.value = e.clientX - dragStartX.value;
+  cropY.value = e.clientY - dragStartY.value;
+};
+
+const onCropMouseUp = () => {
+  isDragging.value = false;
+};
+
+const onCropTouchStart = (e) => {
+  if (e.touches.length === 1) {
+    isDragging.value = true;
+    dragStartX.value = e.touches[0].clientX - cropX.value;
+    dragStartY.value = e.touches[0].clientY - cropY.value;
+  }
+};
+
+const onCropTouchMove = (e) => {
+  if (!isDragging.value || e.touches.length !== 1) return;
+  cropX.value = e.touches[0].clientX - dragStartX.value;
+  cropY.value = e.touches[0].clientY - dragStartY.value;
+};
+
+const confirmCrop = async () => {
+  cropping.value = true;
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = CROP_SIZE;
+    canvas.height = CROP_SIZE;
+    const ctx = canvas.getContext("2d");
+
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = cropImgSrc.value;
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = reject;
+    });
+
+    const s = cropScale.value;
+    // CSS rendering: image top-left at (160,160), transform: translate(cropX,cropY) scale(s), transform-origin: 0 0
+    // Point (px,py) in image → container: Cx = 160 + px*s + cropX, Cy = 160 + py*s + cropY
+    // Crop area in container: center (160,160), radius 140
+    // Canvas (0,0) maps to Container (160-140, 160-140) = (20,20)
+    // canvas_x = Cx - 20 = 160 + px*s + cropX - 20 = px*s + cropX + 140
+
+    ctx.setTransform(s, 0, 0, s, cropX.value + 140, cropY.value + 140);
+    ctx.drawImage(img, 0, 0);
+
+    // Scale and clip to circle
+    const out = document.createElement("canvas");
+    out.width = OUT_SIZE;
+    out.height = OUT_SIZE;
+    const outCtx = out.getContext("2d");
+    outCtx.beginPath();
+    outCtx.arc(OUT_SIZE / 2, OUT_SIZE / 2, OUT_SIZE / 2, 0, Math.PI * 2);
+    outCtx.clip();
+    outCtx.drawImage(canvas, 0, 0, CROP_SIZE, CROP_SIZE, 0, 0, OUT_SIZE, OUT_SIZE);
+
+    const blob = await new Promise((resolve) => out.toBlob(resolve, "image/jpeg", 0.92));
+    const croppedFile = new File([blob], "avatar_" + Date.now() + ".jpg", { type: "image/jpeg" });
+
+    const res = await uploadImage(croppedFile);
+    profileForm.avatarUrl = res.data;
+    cropVisible.value = false;
+    ElMessage.success("头像上传成功");
+  } catch (e) {
+    console.warn(e);
+    ElMessage.error("裁剪上传失败");
+  } finally {
+    cropping.value = false;
+  }
 };
 
 const saveProfile = async () => {
@@ -349,10 +525,38 @@ const savePassword = async () => {
   }
 };
 
+const isAdminEmail = (email) => String(email || "").trim().toLowerCase() === "admin@local";
+
 const handleLogout = async () => {
-  await logout();
+  const email = authStore.user?.email;
+  const admin = isAdminEmail(email);
+  // 非管理员显示确认对话框，取消时直接返回
+  if (!admin) {
+    try {
+      await ElMessageBox.confirm("退出后将回到登录页，你可以随时再次登录。", "退出登录", {
+        confirmButtonText: "继续退出",
+        cancelButtonText: "暂不退出",
+        type: "warning",
+        customClass: "pretty-confirm-box",
+        distinguishCancelAndClose: true,
+        center: true
+      });
+    } catch (e) {
+      // 用户取消或关闭弹窗，什么都不做
+      return;
+    }
+  }
+
+  // 发起登出请求（失败不阻止本地清理）
+  try {
+    await logout();
+  } catch (e) {
+    // 忽略接口错误
+    console.warn("logout api failed", e);
+  }
+
   authStore.clearSession();
-  router.push("/login");
+  router.push(admin ? "/admin/login" : "/login");
 };
 
 onMounted(() => {
@@ -383,10 +587,82 @@ onMounted(() => {
 .addr-right .value { margin: 4px 0; word-break: break-word; }
 .addr-actions { display:flex; gap:8px; margin-left: 12px; flex-shrink: 0; }
 
+.password-strength {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.strength-label,
+.strength-tip {
+  color: var(--text-secondary);
+}
+
+.strength-value {
+  font-weight: 700;
+}
+
+.strength-weak {
+  color: #e03131;
+}
+
+.strength-medium {
+  color: #f08c00;
+}
+
+.strength-strong {
+  color: #2f9e44;
+}
+
 @media (max-width: 600px) {
   .addr-row { flex-direction: column; }
   .addr-cols { flex-direction: row; }
   .addr-left { width: 86px; }
   .addr-actions { margin-top: 8px; }
+}
+
+/* 头像裁剪 */
+.crop-container {
+  width: 320px;
+  height: 320px;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #1a1a1a;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.crop-container:active {
+  cursor: grabbing;
+}
+
+.crop-image {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform-origin: 0 0;
+  max-width: none;
+  pointer-events: none;
+}
+
+.crop-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
+}
+
+.crop-border {
+  position: absolute;
+  inset: 20px;
+  border: 2px dashed rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  pointer-events: none;
 }
 </style>

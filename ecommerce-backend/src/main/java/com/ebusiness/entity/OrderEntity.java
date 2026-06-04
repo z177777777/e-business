@@ -16,6 +16,11 @@ import org.hibernate.annotations.UpdateTimestamp;
 public class OrderEntity {
   public static final String STATUS_PENDING = "PENDING_PAYMENT";
   public static final String STATUS_PAID = "PAID";
+  public static final String STATUS_SHIPPED = "SHIPPED";
+  public static final String STATUS_RECEIVED = "RECEIVED";
+  public static final String STATUS_CANCELLED = "CANCELLED";
+  public static final String STATUS_REFUND_REQUESTED = "REFUND_REQUESTED";
+  public static final String STATUS_REFUNDED = "REFUNDED";
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -35,6 +40,12 @@ public class OrderEntity {
 
   @Column(name = "paid_at")
   private LocalDateTime paidAt;
+
+  @Column(name = "shipped_at")
+  private LocalDateTime shippedAt;
+
+  @Column(name = "received_at")
+  private LocalDateTime receivedAt;
 
   @CreationTimestamp
   @Column(name = "created_at", updatable = false)
@@ -56,6 +67,10 @@ public class OrderEntity {
   public void setStatus(String status) { this.status = status; }
   public LocalDateTime getPaidAt() { return paidAt; }
   public void setPaidAt(LocalDateTime paidAt) { this.paidAt = paidAt; }
+  public LocalDateTime getShippedAt() { return shippedAt; }
+  public void setShippedAt(LocalDateTime shippedAt) { this.shippedAt = shippedAt; }
+  public LocalDateTime getReceivedAt() { return receivedAt; }
+  public void setReceivedAt(LocalDateTime receivedAt) { this.receivedAt = receivedAt; }
   public LocalDateTime getCreatedAt() { return createdAt; }
   public LocalDateTime getUpdatedAt() { return updatedAt; }
 }
