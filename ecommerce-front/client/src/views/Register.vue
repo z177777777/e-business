@@ -1,24 +1,24 @@
-﻿<template>
+<template>
   <div class="auth-page">
     <div class="auth-card">
       <div class="auth-hero">
-        <h1>鍔犲叆 ShopPulse</h1>
-        <p>鍒涘缓璐﹀彿锛岃В閿佹敹钘忎笌涓€у寲浼樻儬銆?/p>
-        <p>楠岃瘉鐮佸皢鍙戦€佸埌浣犵殑閭銆?/p>
+        <h1>加入 ShopPulse</h1>
+        <p>创建账号，解锁收藏与个性化优惠。</p>
+        <p>验证码将发送到你的邮箱。</p>
       </div>
       <div class="auth-form">
-        <h2 class="auth-title">鍒涘缓璐﹀彿</h2>
-        <!-- CSR 瀹℃壒閫氳繃妯箙 -->
+        <h2 class="auth-title">创建账号</h2>
+        <!-- CSR 审批通过横幅 -->
         <div v-if="isCsrMode" class="csr-banner">
-          绠＄悊鍛樺凡閫氳繃浣犵殑瀹㈡湇鐢宠锛屾敞鍐屽悗灏嗚嚜鍔ㄦ垚涓哄鏈嶃€?
+          管理员已通过你的客服申请，注册后将自动成为客服。
         </div>
         <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
           <div class="form-grid">
-            <el-form-item label="閭" prop="email">
-              <el-input v-model="form.email" placeholder="璇疯緭鍏ラ偖绠? />
+            <el-form-item label="邮箱" prop="email">
+              <el-input v-model="form.email" placeholder="请输入邮箱" />
             </el-form-item>
 
-            <!-- 鐢宠鎴愪负瀹㈡湇鎸夐挳锛堣緭鍏ラ偖绠卞悗鏄剧ず锛?-->
+            <!-- 申请成为客服按钮（输入邮箱后显示） -->
             <div v-if="form.email && !isCsrMode" class="csr-apply-row">
               <el-button
                 type="warning"
@@ -26,43 +26,43 @@
                 :disabled="csrApplied"
                 @click="handleApplyCsr"
               >
-                {{ csrApplied ? '宸叉彁浜ょ敵璇? : '鐢宠鎴愪负瀹㈡湇' }}
+                {{ csrApplied ? '已提交申请' : '申请成为客服' }}
               </el-button>
               <span v-if="csrApplied" class="csr-applied-tip">
-                宸茶仈绯荤鐞嗗憳锛岃绛夊緟閭閫氱煡
+                已联系管理员，请等待邮箱通知
               </span>
               <span v-else class="csr-apply-hint">
-                闇€绠＄悊鍛樺鏍?
+                需管理员审核
               </span>
             </div>
 
-            <el-form-item label="楠岃瘉鐮? prop="code">
-              <el-input v-model="form.code" placeholder="杈撳叆6浣嶉獙璇佺爜">
+            <el-form-item label="验证码" prop="code">
+              <el-input v-model="form.code" placeholder="输入6位验证码">
                 <template #append>
                   <el-button :disabled="countdown > 0" @click="handleSendCode">
-                    {{ countdown > 0 ? `${countdown}s` : "鍙戦€? }}
+                    {{ countdown > 0 ? `${countdown}s` : "发送" }}
                   </el-button>
                 </template>
               </el-input>
             </el-form-item>
-            <el-form-item label="瀵嗙爜" prop="password">
-              <el-input v-model="form.password" type="password" show-password placeholder="璁剧疆瀵嗙爜" />
+            <el-form-item label="密码" prop="password">
+              <el-input v-model="form.password" type="password" show-password placeholder="设置密码" />
               <div class="password-strength" v-if="form.password">
-                <span class="strength-label">瀵嗙爜寮哄害锛?/span>
+                <span class="strength-label">密码强度：</span>
                 <span :class="['strength-value', `strength-${passwordStrength.level}`]">{{ passwordStrength.label }}</span>
-                <span class="strength-tip">寤鸿鑷冲皯8浣嶏紝鍖呭惈澶у皬鍐欏瓧姣嶃€佹暟瀛楀拰绗﹀彿</span>
+                <span class="strength-tip">建议至少8位，包含大小写字母、数字和符号</span>
               </div>
             </el-form-item>
-            <el-form-item label="鏄电О" prop="nickname">
-              <el-input v-model="form.nickname" placeholder="閫夊～" />
+            <el-form-item label="昵称" prop="nickname">
+              <el-input v-model="form.nickname" placeholder="选填" />
             </el-form-item>
           </div>
           <el-button type="primary" color="#ff6a3d" :loading="loading" @click="handleRegister" style="width: 100%; margin-top: 18px;">
-            娉ㄥ唽
+            注册
           </el-button>
         </el-form>
         <div class="auth-footer">
-          宸叉湁璐﹀彿锛?router-link to="/login">鍘荤櫥褰?/router-link>
+          已有账号？<router-link to="/login">去登录</router-link>
         </div>
       </div>
     </div>
@@ -96,9 +96,9 @@ const form = reactive({
 });
 
 const rules = {
-  email: [{ required: true, message: "璇疯緭鍏ラ偖绠?, trigger: "blur" }],
-  code: [{ required: true, message: "璇疯緭鍏ラ獙璇佺爜", trigger: "blur" }],
-  password: [{ required: true, message: "璇疯緭鍏ュ瘑鐮?, trigger: "blur" }]
+  email: [{ required: true, message: "请输入邮箱", trigger: "blur" }],
+  code: [{ required: true, message: "请输入验证码", trigger: "blur" }],
+  password: [{ required: true, message: "请输入密码", trigger: "blur" }]
 };
 
 const calcPasswordStrength = (pwd) => {
@@ -109,9 +109,9 @@ const calcPasswordStrength = (pwd) => {
   if (/[a-z]/.test(value) && /[A-Z]/.test(value)) score += 1;
   if (/\d/.test(value)) score += 1;
   if (/[^A-Za-z0-9]/.test(value)) score += 1;
-  if (score <= 1) return { level: "weak", label: "寮? };
-  if (score <= 3) return { level: "medium", label: "涓? };
-  return { level: "strong", label: "寮? };
+  if (score <= 1) return { level: "weak", label: "弱" };
+  if (score <= 3) return { level: "medium", label: "中" };
+  return { level: "strong", label: "强" };
 };
 
 const passwordStrength = computed(() => calcPasswordStrength(form.password));
@@ -128,7 +128,7 @@ const startCountdown = () => {
 
 const handleApplyCsr = async () => {
   if (!form.email) {
-    ElMessage.warning("璇峰厛杈撳叆閭");
+    ElMessage.warning("请先输入邮箱");
     return;
   }
   applyingCsr.value = true;
@@ -136,12 +136,12 @@ const handleApplyCsr = async () => {
     await applyCsr(form.email);
     csrApplied.value = true;
     ElNotification.success({
-      title: "鐢宠宸叉彁浜?,
-      message: "宸茶仈绯荤鐞嗗憳锛岃绛夊緟閭閫氱煡",
+      title: "申请已提交",
+      message: "已联系管理员，请等待邮箱通知",
       duration: 5000
     });
   } catch (e) {
-    // 閿欒娑堟伅鐢辨嫤鎴櫒澶勭悊
+    // 错误消息由拦截器处理
     console.warn("apply csr failed", e);
   } finally {
     applyingCsr.value = false;
@@ -150,15 +150,15 @@ const handleApplyCsr = async () => {
 
 const handleSendCode = async () => {
   if (!form.email) {
-    ElMessage.warning("璇峰厛杈撳叆閭");
+    ElMessage.warning("请先输入邮箱");
     return;
   }
   try {
     await sendCode(form.email, "REGISTER");
-    ElMessage.success("楠岃瘉鐮佸凡鍙戦€?);
+    ElMessage.success("验证码已发送");
     startCountdown();
   } catch (e) {
-    // 閿欒娑堟伅鐢辨嫤鎴櫒澶勭悊锛堝"璇ラ偖绠卞凡鐢宠鎴愪负瀹㈡湇锛屾棤娉曟敞鍐屼负鏅€氳处鎴?锛?
+    // 错误消息由拦截器处理（如"该邮箱已申请成为客服，无法注册为普通账户"）
     console.warn("send code failed", e);
   }
 };
@@ -176,7 +176,7 @@ const handleRegister = async () => {
     authStore.setSession(res.data.token, res.data.user, true);
     authStore.setRememberedEmail(form.email);
     const role = res.data.user?.role;
-    ElMessage.success("娉ㄥ唽鎴愬姛");
+    ElMessage.success("注册成功");
     if (role === "CSR") {
       router.push("/chat");
     } else {
@@ -247,20 +247,11 @@ const handleRegister = async () => {
 .strength-strong {
   color: #2f9e44;
 }
+
 @media (max-width: 768px) {
-  .auth-card {
-    width: 100% !important;
-    max-width: 100% !important;
-    padding: 16px !important;
-    border-radius: 0 !important;
-  }
-  .el-input, .el-button {
-    width: 100% !important;
-  }
-  .auth-page {
-    padding: 12px !important;
-    min-height: auto !important;
-  }
+  .auth-card { width: 100% !important; max-width: 100% !important; padding: 16px !important; border-radius: 0 !important; }
+  .auth-page { padding: 12px !important; min-height: auto !important; }
+  .el-input, .el-button { width: 100% !important; }
   h1, h2, h3 { font-size: 1.2em !important; }
 }
 </style>

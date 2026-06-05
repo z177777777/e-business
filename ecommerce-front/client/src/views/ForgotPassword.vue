@@ -1,42 +1,42 @@
-﻿<template>
+<template>
   <div class="auth-page">
     <div class="auth-card">
       <div class="auth-hero">
-        <h1>鎵惧洖瀵嗙爜</h1>
-        <p>楠岃瘉鐮佸皢鍙戦€佸埌浣犵殑閭锛岀敤浜庨噸缃瘑鐮併€?/p>
+        <h1>找回密码</h1>
+        <p>验证码将发送到你的邮箱，用于重置密码。</p>
       </div>
       <div class="auth-form">
-        <h2 class="auth-title">閲嶇疆瀵嗙爜</h2>
+        <h2 class="auth-title">重置密码</h2>
         <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
           <div class="form-grid">
-            <el-form-item label="閭" prop="email">
-              <el-input v-model="form.email" placeholder="璇疯緭鍏ラ偖绠? />
+            <el-form-item label="邮箱" prop="email">
+              <el-input v-model="form.email" placeholder="请输入邮箱" />
             </el-form-item>
-            <el-form-item label="楠岃瘉鐮? prop="code">
-              <el-input v-model="form.code" placeholder="杈撳叆6浣嶉獙璇佺爜">
+            <el-form-item label="验证码" prop="code">
+              <el-input v-model="form.code" placeholder="输入6位验证码">
                 <template #append>
                   <el-button :disabled="countdown > 0" @click="handleSendCode">
-                    {{ countdown > 0 ? `${countdown}s` : "鍙戦€? }}
+                    {{ countdown > 0 ? `${countdown}s` : "发送" }}
                   </el-button>
                 </template>
               </el-input>
             </el-form-item>
-            <el-form-item label="鏂板瘑鐮? prop="newPassword">
-              <el-input v-model="form.newPassword" type="password" show-password placeholder="璇疯緭鍏ユ柊瀵嗙爜" />
+            <el-form-item label="新密码" prop="newPassword">
+              <el-input v-model="form.newPassword" type="password" show-password placeholder="请输入新密码" />
               <div class="password-strength" v-if="form.newPassword">
-                <span class="strength-label">瀵嗙爜寮哄害锛?/span>
+                <span class="strength-label">密码强度：</span>
                 <span :class="['strength-value', `strength-${passwordStrength.level}`]">{{ passwordStrength.label }}</span>
-                <span class="strength-tip">寤鸿鑷冲皯8浣嶏紝鍖呭惈澶у皬鍐欏瓧姣嶃€佹暟瀛楀拰绗﹀彿</span>
+                <span class="strength-tip">建议至少8位，包含大小写字母、数字和符号</span>
               </div>
             </el-form-item>
           </div>
           <el-button type="primary" color="#ff6a3d" :loading="loading" @click="handleReset" style="width: 100%; margin-top: 18px;">
-            鏇存柊瀵嗙爜
+            更新密码
           </el-button>
         </el-form>
         <div class="auth-footer">
-          <el-button text type="primary" :loading="contactLoading" class="contact-admin-btn" @click="handleContactAdmin">鑱旂郴绠＄悊鍛?/el-button>
-          <router-link to="/login" class="back-login-link">鈫?鐧诲綍</router-link>
+          <el-button text type="primary" :loading="contactLoading" class="contact-admin-btn" @click="handleContactAdmin">联系管理员</el-button>
+          <router-link to="/login" class="back-login-link">← 登录</router-link>
         </div>
       </div>
     </div>
@@ -63,9 +63,9 @@ const form = reactive({
 });
 
 const rules = {
-  email: [{ required: true, message: "璇疯緭鍏ラ偖绠?, trigger: "blur" }],
-  code: [{ required: true, message: "璇疯緭鍏ラ獙璇佺爜", trigger: "blur" }],
-  newPassword: [{ required: true, message: "璇疯緭鍏ユ柊瀵嗙爜", trigger: "blur" }]
+  email: [{ required: true, message: "请输入邮箱", trigger: "blur" }],
+  code: [{ required: true, message: "请输入验证码", trigger: "blur" }],
+  newPassword: [{ required: true, message: "请输入新密码", trigger: "blur" }]
 };
 
 const calcPasswordStrength = (pwd) => {
@@ -76,9 +76,9 @@ const calcPasswordStrength = (pwd) => {
   if (/[a-z]/.test(value) && /[A-Z]/.test(value)) score += 1;
   if (/\d/.test(value)) score += 1;
   if (/[^A-Za-z0-9]/.test(value)) score += 1;
-  if (score <= 1) return { level: "weak", label: "寮? };
-  if (score <= 3) return { level: "medium", label: "涓? };
-  return { level: "strong", label: "寮? };
+  if (score <= 1) return { level: "weak", label: "弱" };
+  if (score <= 3) return { level: "medium", label: "中" };
+  return { level: "strong", label: "强" };
 };
 
 const passwordStrength = computed(() => calcPasswordStrength(form.newPassword));
@@ -95,11 +95,11 @@ const startCountdown = () => {
 
 const handleSendCode = async () => {
   if (!form.email) {
-    ElMessage.warning("璇峰厛杈撳叆閭");
+    ElMessage.warning("请先输入邮箱");
     return;
   }
   await sendCode(form.email, "RESET");
-  ElMessage.success("楠岃瘉鐮佸凡鍙戦€?);
+  ElMessage.success("验证码已发送");
   startCountdown();
 };
 
@@ -112,7 +112,7 @@ const handleReset = async () => {
       code: form.code,
       newPassword: form.newPassword
     });
-    ElMessage.success("瀵嗙爜宸叉洿鏂?);
+    ElMessage.success("密码已更新");
     router.push("/login");
   } finally {
     loading.value = false;
@@ -121,16 +121,16 @@ const handleReset = async () => {
 
 const handleContactAdmin = async () => {
   if (!form.email) {
-    ElMessage.warning("璇峰厛杈撳叆閭");
+    ElMessage.warning("请先输入邮箱");
     return;
   }
   contactLoading.value = true;
   try {
     await requestPasswordResetSupport({
       email: form.email,
-      message: "鐢ㄦ埛鍦ㄦ壘鍥炲瘑鐮侀〉闈㈣姹傜鐞嗗憳鍗忓姪閲嶇疆瀵嗙爜"
+      message: "用户在找回密码页面请求管理员协助重置密码"
     });
-    ElMessage.success("宸插悜绠＄悊鍛樺彂閫侀噸缃姹?);
+    ElMessage.success("已向管理员发送重置请求");
   } catch (e) {
     console.warn("request password reset support failed", e);
   } finally {
@@ -184,20 +184,11 @@ const handleContactAdmin = async () => {
 .back-login-link {
   margin-left: auto;
 }
+
 @media (max-width: 768px) {
-  .auth-card {
-    width: 100% !important;
-    max-width: 100% !important;
-    padding: 16px !important;
-    border-radius: 0 !important;
-  }
-  .el-input, .el-button {
-    width: 100% !important;
-  }
-  .auth-page {
-    padding: 12px !important;
-    min-height: auto !important;
-  }
+  .auth-card { width: 100% !important; max-width: 100% !important; padding: 16px !important; border-radius: 0 !important; }
+  .auth-page { padding: 12px !important; min-height: auto !important; }
+  .el-input, .el-button { width: 100% !important; }
   h1, h2, h3 { font-size: 1.2em !important; }
 }
 </style>
