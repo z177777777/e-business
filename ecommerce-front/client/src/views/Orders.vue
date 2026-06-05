@@ -251,8 +251,20 @@ const statusTagType = (status) => {
   margin-bottom: 8px;
 }
 
-@media (max-width: 720px) {
-  .items-list-item { flex-direction: column; align-items: flex-start }
-  .status-wrap { justify-content: flex-start }
+@media (max-width: 768px) {
+  .orders-page { padding: 12px !important; }
+  .page-title { font-size: 18px; margin-bottom: 12px; }
+  .order-card { padding: 12px !important; border-radius: 10px; }
+  .order-head { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .order-head .meta { gap: 4px; }
+  .order-no { font-size: 13px; }
+  .status-wrap { justify-content: flex-start; min-width: auto; }
+  .items-list-item { grid-template-columns: 1fr auto auto; gap: 8px; font-size: 13px; }
+  .item-name { font-size: 13px; }
+  .order-footer { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .order-total { font-size: 15px; }
+  .order-actions { flex-wrap: wrap; width: 100%; }
+  .order-actions .el-button { flex: 1 1 auto; min-width: 0; }
+  .order-tabs .el-tabs__nav-wrap { overflow-x: auto; }
 }
 </style>

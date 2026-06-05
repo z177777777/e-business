@@ -313,18 +313,35 @@ onBeforeUnmount(() => {
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 768px) {
   .app-shell {
-    padding-right: 68px;
+    padding-right: 0 !important;
   }
 
   .side-toolbar {
-    right: 4px;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    transform: none;
+    flex-direction: row;
+    width: 100%;
+    justify-content: space-around;
+    padding: 6px 4px;
+    border-radius: 14px 14px 0 0;
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
   }
   .side-item {
-    width: 64px;
-    padding: 8px 6px;
+    width: auto;
+    flex: 1;
+    padding: 8px 4px;
     font-size: 11px;
+    border-radius: 8px;
+  }
+  .feedback-sidebar {
+    width: 100%;
+    max-width: 100vw;
   }
 }
 </style>

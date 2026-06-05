@@ -135,11 +135,17 @@ const handleLogout = async () => {
   overflow-y: auto;
 }
 
-@media (max-width: 960px) {
+@media (max-width: 768px) {
   .user-shell { flex-direction: column; }
-  .user-sidebar { width: 100%; flex-direction: row; flex-wrap: wrap; }
-  .user-menu { display: flex; flex-wrap: wrap; }
-  .sidebar-footer { width: 100%; }
-  .user-content { padding: 20px 16px 60px; }
+  .user-sidebar { width: 100% !important; flex-direction: row; flex-wrap: wrap; border-right: none !important; border-bottom: 1px solid #eee; }
+  .user-brand { width: 100%; padding: 12px 16px 8px; }
+  .brand-title { font-size: 16px; }
+  .user-menu { display: flex; flex-wrap: wrap; border-right: none; }
+  .user-menu .el-menu-item { flex: 0 1 auto; padding: 8px 12px !important; font-size: 13px; height: auto; line-height: 1.5; }
+  .user-menu .el-sub-menu { flex: 0 1 auto; }
+  .user-menu .el-sub-menu .el-sub-menu__title { padding: 8px 12px !important; font-size: 13px; height: auto; line-height: 1.5; }
+  .sidebar-footer { width: 100%; padding: 10px 16px; }
+  .sidebar-footer .el-button { width: 100% !important; }
+  .user-content { padding: 12px !important; }
 }
 </style>

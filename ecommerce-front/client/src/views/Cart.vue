@@ -492,4 +492,23 @@ const handleCheckout = async () => {
     padding: 14px;
   }
 }
+
+@media (max-width: 768px) {
+  .cart-page { padding: 8px !important; gap: 14px; }
+  .cart-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .cart-header h1 { font-size: 24px; margin: 4px 0; }
+  .cart-layout { grid-template-columns: 1fr; gap: 14px; }
+  .cart-list-panel { padding: 14px; }
+  .cart-toolbar { flex-wrap: wrap; gap: 8px; padding: 8px !important; }
+  .cart-item { flex-wrap: wrap; padding: 10px !important; }
+  .item-cover { width: 64px; height: 64px; border-radius: 14px; }
+  .item-name { font-size: 14px; }
+  .item-actions { grid-column: 1 / -1; justify-items: start; }
+  .summary-panel { width: 100% !important; padding: 16px; }
+  .summary-panel h3 { font-size: 16px; }
+  .amount-row strong { font-size: 18px; }
+  .checkout-btn { width: 100%; }
+  .empty-box { padding: 32px 16px; }
+  .empty-title { font-size: 17px; }
+}
 </style>

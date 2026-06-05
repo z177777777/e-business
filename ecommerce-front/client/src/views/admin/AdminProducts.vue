@@ -409,4 +409,44 @@ onMounted(async () => {
 .review-row { padding: 12px; border: 1px solid #e5e7eb; border-radius: 10px; }
 .review-meta { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
 .review-text { line-height: 1.6; color: #374151; }
+@media (max-width: 768px) {
+  .el-table__body-wrapper {
+    overflow-x: auto;
+  }
+
+  .el-form-item {
+    display: block;
+    margin-bottom: 12px;
+  }
+
+  .el-form-item__label {
+    width: 100% !important;
+    text-align: left !important;
+  }
+
+  .el-form-item__content {
+    width: 100% !important;
+  }
+
+  .page-header {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .filter-bar {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .el-button + .el-button {
+    margin-left: 0 !important;
+    margin-top: 8px;
+  }
+
+  .el-pagination {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+}
+
 </style>

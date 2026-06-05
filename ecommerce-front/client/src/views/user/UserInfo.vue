@@ -174,4 +174,15 @@ const confirmCrop = async () => {
 .crop-image { position:absolute; left:50%; top:50%; transform-origin:0 0; max-width:none; pointer-events:none; }
 .crop-overlay { position:absolute; inset:0; border-radius:50%; box-shadow:0 0 0 9999px rgba(0,0,0,0.55); }
 .crop-border { position:absolute; inset:20px; border:2px dashed rgba(255,255,255,0.7); border-radius:50%; pointer-events:none; }
+
+@media (max-width: 768px) {
+  .page-card { padding: 12px !important; border-radius: 10px; }
+  .page-card h2 { font-size: 18px; margin-bottom: 14px; }
+  .el-form-item { display: block; margin-bottom: 14px; }
+  .el-form-item__label { width: 100% !important; text-align: left !important; padding-bottom: 4px; }
+  .el-form-item__content { width: 100% !important; margin-left: 0 !important; }
+  .el-input, .el-select, .el-button { width: 100% !important; }
+  .avatar-wrapper { flex-direction: column; align-items: center; }
+  .crop-container { width: 280px; height: 280px; }
+}
 </style>

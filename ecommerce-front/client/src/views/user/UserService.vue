@@ -29,4 +29,13 @@
 .service-card ul { margin:0; padding-left:20px; color:var(--text-secondary); }
 .service-card ul li { margin:6px 0; }
 .service-card p { margin:6px 0; color:var(--text-secondary); }
+
+@media (max-width: 768px) {
+  .page-card { padding: 12px !important; border-radius: 10px; }
+  .page-card h2 { font-size: 18px; margin-bottom: 14px; }
+  .service-info { grid-template-columns: 1fr !important; gap: 10px; }
+  .service-card h3 { font-size: 15px; }
+  .service-card ul li { font-size: 13px; }
+  .service-card p { font-size: 13px; }
+}
 </style>

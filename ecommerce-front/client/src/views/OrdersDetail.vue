@@ -260,4 +260,20 @@ const refund = async () => {
 .items-table th, .items-table td { padding:12px; border-bottom:1px solid rgba(0,0,0,0.06); text-align:left }
 .detail-footer { display:flex; justify-content:space-between; align-items:center; margin-top:16px }
 .total { font-weight:700; font-size:18px }
+
+@media (max-width: 768px) {
+  .order-detail-page { padding: 12px !important; }
+  .detail-shell h2 { font-size: 16px; }
+  .meta-row { flex-direction: column; gap: 8px; font-size: 13px; }
+  .items-table { font-size: 12px; }
+  .items-table th, .items-table td { padding: 8px 6px; }
+  .items-table thead { display: none; }
+  .items-table tbody tr { display: flex; flex-direction: column; border-bottom: 1px solid rgba(0,0,0,0.08); padding: 8px 0; }
+  .items-table tbody td { display: flex; justify-content: space-between; border-bottom: none; padding: 4px 6px; }
+  .items-table tbody td::before { content: attr(data-label); font-weight: 600; color: var(--text-secondary); }
+  .detail-footer { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .total { font-size: 16px; }
+  .detail-footer .actions { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; }
+  .detail-footer .actions .el-button { flex: 1 1 auto; min-width: 0; }
+}
 </style>

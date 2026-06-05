@@ -154,4 +154,5 @@ const goProduct = (item) => {
 .product-price { font-weight:700; font-size:18px }
 @media (max-width:1024px){ .product-grid{ grid-template-columns:repeat(2,1fr);} }
 @media (max-width:640px){ .product-grid{ grid-template-columns:1fr; } }
+@media (max-width:768px){.products-page{padding:8px!important}.list-head{flex-wrap:wrap;gap:8px;flex-direction:column;align-items:flex-start}.list-title{font-size:1.1rem!important;margin:0}.sort-bar{flex-wrap:wrap;gap:6px;padding:4px!important;width:100%}.sort-bar .el-radio-button__inner{padding:6px 12px;font-size:12px}.product-grid{gap:8px!important}.product-card{border-radius:14px}.product-cover{height:120px}.product-info{padding:10px 12px 14px}.product-title{font-size:13px}.product-meta{font-size:11px}.product-price{font-size:15px}}
 </style>

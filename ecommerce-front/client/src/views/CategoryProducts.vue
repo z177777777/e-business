@@ -275,4 +275,22 @@ const goProduct = (item) => {
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 768px) {
+  .category-page { padding: 8px !important; gap: 16px; }
+  .category-hero { padding: 20px 16px !important; border-radius: 16px; flex-direction: column; align-items: flex-start; }
+  .category-hero h2 { font-size: 1.1rem !important; }
+  .category-hero p { font-size: 0.85rem !important; }
+  .sort-bar { flex-wrap: wrap; gap: 6px; padding: 4px !important; width: 100%; }
+  .sort-bar .el-radio-button__inner { padding: 6px 12px; font-size: 12px; }
+  .product-grid { gap: 8px !important; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .product-card { border-radius: 14px; }
+  .product-cover { height: 120px; }
+  .product-info { padding: 10px 12px 14px; gap: 4px; }
+  .product-title { font-size: 13px; }
+  .product-meta { font-size: 11px; flex-wrap: wrap; gap: 6px; }
+  .product-price { font-size: 15px; }
+  .empty-box { padding: 24px 16px; }
+  .empty-title { font-size: 15px; }
+}
 </style>

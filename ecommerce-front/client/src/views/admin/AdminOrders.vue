@@ -285,4 +285,44 @@ const handleBatchRefund = async () => {
 .admin-order-tabs {
   margin-bottom: 8px;
 }
+@media (max-width: 768px) {
+  .el-table__body-wrapper {
+    overflow-x: auto;
+  }
+
+  .el-form-item {
+    display: block;
+    margin-bottom: 12px;
+  }
+
+  .el-form-item__label {
+    width: 100% !important;
+    text-align: left !important;
+  }
+
+  .el-form-item__content {
+    width: 100% !important;
+  }
+
+  .page-header {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .filter-bar {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .el-button + .el-button {
+    margin-left: 0 !important;
+    margin-top: 8px;
+  }
+
+  .el-pagination {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+}
+
 </style>

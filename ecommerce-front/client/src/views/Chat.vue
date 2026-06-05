@@ -1,7 +1,7 @@
 <template>
   <div class="chat-page">
     <!-- 左侧会话列表 -->
-    <div class="chat-sidebar">
+    <div class="chat-sidebar" :class="{ 'hide-mobile': isCsr && activeSession || !isCsr && activeSession }">
       <div class="sidebar-header">
         <div class="header-left">
           <button class="back-btn" @click="goBack">
@@ -41,10 +41,13 @@
     </div>
 
     <!-- 右侧聊天区 -->
-    <div class="chat-main" v-if="activeSession">
+    <div class="chat-main" v-if="activeSession" :class="{ 'show-mobile': activeSession }">
       <!-- 聊天头部 -->
       <div class="chat-header">
         <div class="chat-header-info">
+          <button class="mobile-back-btn" @click="activeSession = null">
+            <el-icon><ArrowLeft /></el-icon>
+          </button>
           <div class="chat-avatar">
             <img v-if="activeSessionUser?.avatarUrl" :src="activeSessionUser.avatarUrl" class="avatar-img" />
             <span v-else>{{ (activeSessionUser?.nickname || '?')[0] }}</span>
@@ -825,6 +828,11 @@ onBeforeUnmount(() => {
   margin-top: 2px;
 }
 
+/* 移动端返回按钮，默认隐藏 */
+.mobile-back-btn {
+  display: none;
+}
+
 /* 消息区域 */
 .message-area {
   flex: 1;
@@ -1270,6 +1278,59 @@ onBeforeUnmount(() => {
   font-size: 15px;
   font-weight: 600;
   color: #e74c3c;
+}
+
+
+/* 移动端响应式 */
+@media (max-width: 768px) {
+  .chat-sidebar {
+    width: 100% !important;
+    border-right: none !important;
+  }
+  .chat-main {
+    display: none;
+  }
+  .chat-main.show-mobile {
+    display: flex !important;
+  }
+  .chat-sidebar.hide-mobile {
+    display: none !important;
+  }
+  .chat-empty {
+    display: none;
+  }
+  .chat-page {
+    flex-direction: column;
+  }
+  .sidebar-header { padding: 12px; }
+  .header-title { font-size: 16px; }
+  .session-item { padding: 12px; }
+  .msg-row { max-width: 90% !important; }
+  .msg-avatar { width: 30px; height: 30px; }
+  .msg-bubble { font-size: 14px; padding: 8px 12px; }
+  .input-area { padding: 0 10px 8px; }
+  .msg-input { font-size: 14px; }
+  .order-picker-panel { width: 95vw; padding: 16px; }
+  .order-detail-panel { width: 95vw; }
+  .order-detail-body { max-height: 50vh; padding: 16px; }
+  .chat-header { padding: 10px 14px; }
+  .chat-avatar { width: 36px; height: 36px; }
+  .message-area { padding: 12px; }
+  .img-preview-content { max-width: 95vw; max-height: 80vh; }
+  .order-picker-list { max-height: 40vh; }
+  .session-list { padding: 0; }
+  /* 移动端返回按钮 */
+  .mobile-back-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 4px;
+    color: #333;
+    flex-shrink: 0;
+  }
 }
 
 </style>

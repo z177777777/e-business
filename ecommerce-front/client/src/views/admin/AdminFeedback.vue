@@ -188,4 +188,57 @@ onMounted(loadMessages);
   display: flex;
   gap: 8px;
 }
+@media (max-width: 768px) {
+  .el-table__body-wrapper {
+    overflow-x: auto;
+  }
+
+  .el-form-item {
+    display: block;
+    margin-bottom: 12px;
+  }
+
+  .el-form-item__label {
+    width: 100% !important;
+    text-align: left !important;
+  }
+
+  .el-form-item__content {
+    width: 100% !important;
+  }
+
+  .page-header {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .filter-bar {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .el-button + .el-button {
+    margin-left: 0 !important;
+    margin-top: 8px;
+  }
+
+  .el-pagination {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .request-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .request-actions {
+    justify-content: flex-start;
+  }
+
+  .request-main {
+    min-width: 100%;
+  }
+
+}
+
 </style>

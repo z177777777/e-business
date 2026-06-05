@@ -124,4 +124,15 @@ onUnmounted(() => { if (emailTimer) clearInterval(emailTimer); });
 .strength-weak { color:#e03131; }
 .strength-medium { color:#f08c00; }
 .strength-strong { color:#2f9e44; }
+
+@media (max-width: 768px) {
+  .page-card { padding: 12px !important; border-radius: 10px; }
+  .page-card h2 { font-size: 18px; margin-bottom: 14px; }
+  .section h3 { font-size: 15px; }
+  .el-form-item { display: block; margin-bottom: 14px; }
+  .el-form-item__label { width: 100% !important; text-align: left !important; padding-bottom: 4px; }
+  .el-form-item__content { width: 100% !important; margin-left: 0 !important; }
+  .el-input, .el-select, .el-button { width: 100% !important; }
+  .password-strength { flex-direction: column; align-items: flex-start; gap: 4px; }
+}
 </style>

@@ -143,5 +143,19 @@ const setDefault = async (id) => {
 .addr-right .value { margin:4px 0; word-break:break-word; }
 .default-tag { color:#ff6a3d; font-weight:600; }
 .addr-actions { display:flex; gap:8px; margin-left:12px; flex-shrink:0; }
-@media (max-width:600px) { .addr-row { flex-direction:column; } .addr-cols { flex-direction:row; } .addr-left { width:86px; } .addr-actions { margin-top:8px; } }
+@media (max-width: 768px) {
+  .page-card { padding: 12px !important; border-radius: 10px; }
+  .page-card h2 { font-size: 18px; margin-bottom: 14px; }
+  .addr-row { flex-direction: column; }
+  .addr-cols { flex-direction: row; }
+  .addr-left { width: 86px; padding-right: 6px; }
+  .addr-left .label { font-size: 13px; }
+  .addr-right .value { font-size: 13px; }
+  .addr-actions { margin-top: 8px; flex-wrap: wrap; }
+  .addr-actions .el-button { flex: 1 1 auto; min-width: 0; font-size: 12px; }
+  .el-form-item { display: block; margin-bottom: 14px; }
+  .el-form-item__label { width: 100% !important; text-align: left !important; padding-bottom: 4px; }
+  .el-form-item__content { width: 100% !important; margin-left: 0 !important; }
+  .el-input, .el-select, .el-cascader { width: 100% !important; }
+}
 </style>

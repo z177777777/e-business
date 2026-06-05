@@ -102,6 +102,15 @@ const handleRemove = async (item) => {
 .fav-price { font-weight:700; font-size:16px; margin-top:8px; color:#e4393c; }
 .fav-remove-btn { position:absolute; top:8px; right:8px; }
 
-@media (max-width:1024px) { .fav-grid { grid-template-columns:repeat(2, minmax(0, 1fr)); } }
-@media (max-width:640px) { .fav-grid { grid-template-columns:1fr; } }
+@media (max-width: 768px) {
+  .page-card { padding: 12px !important; border-radius: 10px; }
+  .page-card h2 { font-size: 18px; margin-bottom: 14px; }
+  .fav-grid { grid-template-columns: 1fr !important; gap: 10px; }
+  .fav-card { border-radius: 10px; }
+  .fav-cover { height: 120px; }
+  .fav-info { padding: 10px 12px 14px; }
+  .fav-name { font-size: 14px; }
+  .fav-price { font-size: 15px; }
+  .fav-remove-btn { top: 6px; right: 6px; }
+}
 </style>

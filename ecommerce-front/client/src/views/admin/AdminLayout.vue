@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="admin-shell">
     <aside class="admin-sidebar">
       <div class="brand">
@@ -147,13 +147,43 @@ const handleLogout = async () => {
   padding: 24px;
 }
 
-@media (max-width: 960px) {
+@media (max-width: 768px) {
   .admin-shell {
     flex-direction: column;
   }
 
   .admin-sidebar {
-    width: 100%;
+    width: 100% !important;
+    min-width: 0 !important;
+    flex-shrink: 0;
+    position: static;
+  }
+
+  .admin-sidebar.collapsed-mobile {
+    display: none;
+  }
+
+  .admin-main {
+    padding: 12px !important;
+  }
+
+  .admin-header {
+    padding: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .admin-header h2 {
+    font-size: 18px;
+  }
+
+  .el-table {
+    font-size: 12px;
+  }
+
+  .admin-card,
+  .el-card {
+    margin-bottom: 12px;
   }
 }
 </style>

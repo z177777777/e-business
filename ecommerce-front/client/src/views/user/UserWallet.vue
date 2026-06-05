@@ -103,4 +103,17 @@ const formatTime = (v) => {
 .top-up-row { display:flex; align-items:center; gap:12px; margin-top:8px; }
 .tx-section h3 { font-size:16px; margin:0 0 12px; }
 .empty-hint { padding:40px 0; text-align:center; color:var(--text-secondary); }
+
+@media (max-width: 768px) {
+  .page-card { padding: 12px !important; border-radius: 10px; }
+  .page-card h2 { font-size: 18px; margin-bottom: 14px; }
+  .balance-section { padding: 12px 0; }
+  .balance-amount { font-size: 32px; }
+  .top-up-row { flex-direction: column; width: 100%; align-items: stretch; }
+  .top-up-row .el-input-number { width: 100% !important; }
+  .top-up-row .el-button { width: 100% !important; }
+  .el-table { font-size: 12px; }
+  .el-table__body-wrapper { overflow-x: auto; }
+  .tx-section h3 { font-size: 15px; }
+}
 </style>

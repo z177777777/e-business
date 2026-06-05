@@ -583,4 +583,20 @@ const handleSubmitReview = async () => {
     padding: 22px;
   }
 }
+
+@media (max-width: 768px) {
+  .product-page { padding: 8px !important; gap: 16px; }
+  .product-hero { grid-template-columns: 1fr; gap: 16px; }
+  .product-cover { width: 100% !important; max-height: 300px !important; min-height: 220px; border-radius: 20px; }
+  .product-info { padding: 16px !important; width: 100% !important; border-radius: 20px; gap: 8px; }
+  .product-title { font-size: 22px; }
+  .product-sub { font-size: 13px; }
+  .price-row { font-size: 22px; }
+  .highlight-grid { grid-template-columns: 1fr; gap: 6px; }
+  .highlight-item { font-size: 11px; padding: 6px 10px; }
+  .action-row { gap: 8px; flex-wrap: wrap; }
+  .action-row .el-button { font-size: 13px; padding: 8px 14px; flex: 1; }
+  .detail-tabs { flex-wrap: wrap; gap: 4px; }
+  .detail-tab { font-size: 13px; padding: 8px 14px; }
+}
 </style>

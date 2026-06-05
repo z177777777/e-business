@@ -357,4 +357,21 @@ onMounted(load);
   .addr-action-btn { height: 26px; padding: 0 8px; font-size: 12px; }
   .address-actions { margin-top: 8px; }
 }
+
+@media (max-width: 768px) {
+  .checkout-shell { padding: 8px !important; gap: 12px; }
+  .checkout-shell h2 { font-size: 22px; }
+  .addr-row { flex-direction: column; gap: 12px; padding: 16px; min-height: auto; }
+  .addr-item { gap: 12px; flex-direction: column; }
+  .addr-cols { flex-direction: column; }
+  .addr-left { width: auto; }
+  .addr-left .label { font-size: 12px; }
+  .addr-right .value { font-size: 13px; }
+  .addr-actions { margin-top: 4px; margin-left: 0; flex-wrap: wrap; gap: 4px; }
+  .addr-action-btn { height: 26px; padding: 0 8px; font-size: 12px; }
+  .address-actions .el-button { width: 100%; }
+  .order-summary h3 { font-size: 16px; }
+  .order-summary p { font-size: 13px; }
+  .checkout-btn { width: 100%; }
+}
 </style>
